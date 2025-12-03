@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import WalletButton from "./WalletButton";
+import { ThemeToggle } from "./ThemeToggle";
 import { LogOut, User, Settings } from "lucide-react";
 
 const Header = () => {
@@ -31,6 +32,7 @@ const Header = () => {
         </Link>
 
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <WalletButton />
           
           {loading ? null : user ? (
