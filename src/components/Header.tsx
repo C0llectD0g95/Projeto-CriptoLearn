@@ -12,7 +12,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import WalletButton from "./WalletButton";
 import { ThemeToggle } from "./ThemeToggle";
-import { LogOut, User, Settings, LayoutDashboard } from "lucide-react";
+import { LogOut, User, Settings, LayoutDashboard, BookOpen } from "lucide-react";
 
 const Header = () => {
   const { user, signOut, loading } = useAuth();
@@ -32,6 +32,12 @@ const Header = () => {
         </Link>
 
         <div className="flex items-center gap-3">
+          <Link to="/cursos">
+            <Button variant="ghost" className="hidden sm:flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              Cursos
+            </Button>
+          </Link>
           <ThemeToggle />
           <WalletButton />
           
