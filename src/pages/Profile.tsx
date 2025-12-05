@@ -8,6 +8,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { 
   User, 
   Wallet, 
@@ -18,16 +27,35 @@ import {
   ExternalLink,
   Shield,
   Bell,
-  Trash2
+  Trash2,
+  Pencil,
+  Key,
+  Loader2
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 
 const Profile = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, updateProfile, updateEmail, updatePassword } = useAuth();
   const { walletAddress, balance, savedWallets } = useWallet();
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+  
+  // Edit profile state
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+  
+  // Edit email state
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [savingEmail, setSavingEmail] = useState(false);
+  
+  // Edit password state
+  const [editingPassword, setEditingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
 
   const getInitials = (email: string) => {
     return email.slice(0, 2).toUpperCase();
@@ -49,6 +77,115 @@ const Profile = () => {
       month: 'long',
       year: 'numeric'
     });
+  };
+
+  const handleSaveProfile = async () => {
+    if (!displayName.trim()) {
+      toast({
+        title: "Erro",
+        description: "O nome não pode estar vazio.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSavingProfile(true);
+    const { error } = await updateProfile(displayName.trim());
+    setSavingProfile(false);
+
+    if (error) {
+      toast({
+        title: "Erro ao atualizar perfil",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Perfil atualizado!",
+        description: "Seu nome foi alterado com sucesso.",
+      });
+      setEditingProfile(false);
+    }
+  };
+
+  const handleSaveEmail = async () => {
+    if (!newEmail.trim()) {
+      toast({
+        title: "Erro",
+        description: "O email não pode estar vazio.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      toast({
+        title: "Erro",
+        description: "Digite um email válido.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSavingEmail(true);
+    const { error } = await updateEmail(newEmail.trim());
+    setSavingEmail(false);
+
+    if (error) {
+      toast({
+        title: "Erro ao atualizar email",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Email de confirmação enviado!",
+        description: "Verifique sua caixa de entrada para confirmar a alteração.",
+      });
+      setEditingEmail(false);
+      setNewEmail("");
+    }
+  };
+
+  const handleSavePassword = async () => {
+    if (newPassword.length < 6) {
+      toast({
+        title: "Erro",
+        description: "A senha deve ter pelo menos 6 caracteres.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Erro",
+        description: "As senhas não coincidem.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSavingPassword(true);
+    const { error } = await updatePassword(newPassword);
+    setSavingPassword(false);
+
+    if (error) {
+      toast({
+        title: "Erro ao atualizar senha",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Senha atualizada!",
+        description: "Sua senha foi alterada com sucesso.",
+      });
+      setEditingPassword(false);
+      setNewPassword("");
+      setConfirmPassword("");
+    }
   };
 
   if (loading) {
@@ -97,9 +234,49 @@ const Profile = () => {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <h3 className="text-xl font-semibold">
-                    {user.user_metadata?.display_name || user.email?.split('@')[0]}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-semibold">
+                      {user.user_metadata?.display_name || user.email?.split('@')[0]}
+                    </h3>
+                    <Dialog open={editingProfile} onOpenChange={(open) => {
+                      setEditingProfile(open);
+                      if (open) setDisplayName(user.user_metadata?.display_name || "");
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Editar Nome</DialogTitle>
+                          <DialogDescription>
+                            Altere o nome de exibição do seu perfil.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="displayName">Nome de exibição</Label>
+                            <Input
+                              id="displayName"
+                              value={displayName}
+                              onChange={(e) => setDisplayName(e.target.value)}
+                              placeholder="Seu nome"
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setEditingProfile(false)}>
+                            Cancelar
+                          </Button>
+                          <Button onClick={handleSaveProfile} disabled={savingProfile}>
+                            {savingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Salvar
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                   <p className="text-muted-foreground">{user.email}</p>
                 </div>
               </div>
@@ -112,7 +289,57 @@ const Profile = () => {
                     <Mail className="h-4 w-4" />
                     Email
                   </Label>
-                  <Input value={user.email || ""} disabled className="bg-secondary" />
+                  <div className="flex gap-2">
+                    <Input value={user.email || ""} disabled className="bg-secondary flex-1" />
+                    <Dialog open={editingEmail} onOpenChange={(open) => {
+                      setEditingEmail(open);
+                      if (!open) setNewEmail("");
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="icon">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Alterar Email</DialogTitle>
+                          <DialogDescription>
+                            Um email de confirmação será enviado para o novo endereço.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="currentEmail">Email atual</Label>
+                            <Input
+                              id="currentEmail"
+                              value={user.email || ""}
+                              disabled
+                              className="bg-secondary"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="newEmail">Novo email</Label>
+                            <Input
+                              id="newEmail"
+                              type="email"
+                              value={newEmail}
+                              onChange={(e) => setNewEmail(e.target.value)}
+                              placeholder="novoemail@exemplo.com"
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setEditingEmail(false)}>
+                            Cancelar
+                          </Button>
+                          <Button onClick={handleSaveEmail} disabled={savingEmail}>
+                            {savingEmail && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Enviar Confirmação
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-muted-foreground flex items-center gap-2">
@@ -253,6 +480,70 @@ const Profile = () => {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
                 <div className="flex items-center gap-3">
+                  <Key className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">Alterar Senha</p>
+                    <p className="text-sm text-muted-foreground">
+                      Atualize sua senha de acesso
+                    </p>
+                  </div>
+                </div>
+                <Dialog open={editingPassword} onOpenChange={(open) => {
+                  setEditingPassword(open);
+                  if (!open) {
+                    setNewPassword("");
+                    setConfirmPassword("");
+                  }
+                }}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      Alterar
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Alterar Senha</DialogTitle>
+                      <DialogDescription>
+                        Digite uma nova senha para sua conta.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="newPassword">Nova senha</Label>
+                        <Input
+                          id="newPassword"
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Mínimo 6 caracteres"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirmar senha</Label>
+                        <Input
+                          id="confirmPassword"
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Repita a nova senha"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setEditingPassword(false)}>
+                        Cancelar
+                      </Button>
+                      <Button onClick={handleSavePassword} disabled={savingPassword}>
+                        {savingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Alterar Senha
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
+                <div className="flex items-center gap-3">
                   <Bell className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="font-medium">Notificações por Email</p>
@@ -263,21 +554,6 @@ const Profile = () => {
                 </div>
                 <Button variant="outline" size="sm">
                   Configurar
-                </Button>
-              </div>
-
-              <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
-                <div className="flex items-center gap-3">
-                  <Shield className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">Segurança</p>
-                    <p className="text-sm text-muted-foreground">
-                      Alterar senha e configurações de segurança
-                    </p>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm">
-                  Gerenciar
                 </Button>
               </div>
 
