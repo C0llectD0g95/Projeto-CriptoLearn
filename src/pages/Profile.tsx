@@ -36,9 +36,11 @@ import {
 import { Navigate } from "react-router-dom";
 import { useState, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
+import { AvatarCropModal } from "@/components/AvatarCropModal";
+import { DeleteAccountModal } from "@/components/DeleteAccountModal";
 
 const Profile = () => {
-  const { user, loading, updateProfile, updateEmail, updatePassword, updateAvatar } = useAuth();
+  const { user, loading, updateProfile, updateEmail, updatePassword, updateAvatar, deleteAccount } = useAuth();
   const { walletAddress, balance, savedWallets } = useWallet();
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -61,12 +63,17 @@ const Profile = () => {
   
   // Avatar upload state
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [selectedImageSrc, setSelectedImageSrc] = useState<string>("");
+  
+  // Delete account state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const getInitials = (email: string) => {
     return email.slice(0, 2).toUpperCase();
   };
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -90,9 +97,25 @@ const Profile = () => {
       return;
     }
 
+    // Create preview and open crop modal
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSelectedImageSrc(reader.result as string);
+      setCropModalOpen(true);
+    };
+    reader.readAsDataURL(file);
+
+    // Clear the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
     setUploadingAvatar(true);
-    const { error } = await updateAvatar(file);
+    const { error } = await updateAvatar(croppedBlob);
     setUploadingAvatar(false);
+    setCropModalOpen(false);
 
     if (error) {
       toast({
@@ -106,10 +129,22 @@ const Profile = () => {
         description: "Sua foto de perfil foi alterada com sucesso.",
       });
     }
+  };
 
-    // Clear the input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+  const handleDeleteAccount = async () => {
+    const { error } = await deleteAccount();
+    
+    if (error) {
+      toast({
+        title: "Erro ao excluir conta",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Conta excluída",
+        description: "Sua conta foi excluída com sucesso.",
+      });
     }
   };
 
@@ -641,7 +676,7 @@ const Profile = () => {
                     </p>
                   </div>
                 </div>
-                <Button variant="destructive" size="sm">
+                <Button variant="destructive" size="sm" onClick={() => setDeleteModalOpen(true)}>
                   Excluir
                 </Button>
               </div>
@@ -649,6 +684,23 @@ const Profile = () => {
           </Card>
         </div>
       </main>
+
+      {/* Crop Modal */}
+      <AvatarCropModal
+        open={cropModalOpen}
+        onOpenChange={setCropModalOpen}
+        imageSrc={selectedImageSrc}
+        onCropComplete={handleCropComplete}
+        uploading={uploadingAvatar}
+      />
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        onConfirm={handleDeleteAccount}
+        userEmail={user.email || ""}
+      />
     </div>
   );
 };

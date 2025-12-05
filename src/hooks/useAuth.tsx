@@ -13,7 +13,8 @@ interface AuthContextType {
   updateProfile: (displayName: string) => Promise<{ error: Error | null }>;
   updateEmail: (newEmail: string) => Promise<{ error: Error | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
-  updateAvatar: (file: File) => Promise<{ error: Error | null; url?: string }>;
+  updateAvatar: (file: File | Blob) => Promise<{ error: Error | null; url?: string }>;
+  deleteAccount: () => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -109,10 +110,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
-  const updateAvatar = async (file: File) => {
+  const updateAvatar = async (file: File | Blob) => {
     if (!user) return { error: new Error("User not authenticated") as Error };
     
-    const fileExt = file.name.split('.').pop();
+    const fileExt = file instanceof File ? file.name.split('.').pop() : 'jpg';
     const filePath = `${user.id}/avatar.${fileExt}`;
     
     // Upload file to storage
@@ -122,14 +123,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     if (uploadError) return { error: uploadError as Error };
     
-    // Get public URL
+    // Get public URL with cache busting
     const { data: { publicUrl } } = supabase.storage
       .from('avatars')
       .getPublicUrl(filePath);
     
+    const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
+    
     // Update user metadata
     const { error: updateError } = await supabase.auth.updateUser({
-      data: { avatar_url: publicUrl }
+      data: { avatar_url: urlWithCacheBust }
     });
     
     if (updateError) return { error: updateError as Error };
@@ -137,10 +140,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Update profiles table
     await supabase
       .from('profiles')
-      .update({ avatar_url: publicUrl })
+      .update({ avatar_url: urlWithCacheBust })
       .eq('id', user.id);
     
-    return { error: null, url: publicUrl };
+    return { error: null, url: urlWithCacheBust };
+  };
+
+  const deleteAccount = async () => {
+    if (!user) return { error: new Error("User not authenticated") as Error };
+    
+    try {
+      // Delete user's wallets
+      await supabase.from('wallets').delete().eq('user_id', user.id);
+      
+      // Delete user's profile
+      await supabase.from('profiles').delete().eq('id', user.id);
+      
+      // Delete avatar from storage
+      const { data: files } = await supabase.storage.from('avatars').list(user.id);
+      if (files && files.length > 0) {
+        await supabase.storage.from('avatars').remove(files.map(f => `${user.id}/${f.name}`));
+      }
+      
+      // Note: Full account deletion requires admin API - sign out user
+      await supabase.auth.signOut();
+      
+      return { error: null };
+    } catch (err) {
+      return { error: err as Error };
+    }
   };
 
   return (
@@ -155,7 +183,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       updateProfile,
       updateEmail,
       updatePassword,
-      updateAvatar
+      updateAvatar,
+      deleteAccount
     }}>
       {children}
     </AuthContext.Provider>
