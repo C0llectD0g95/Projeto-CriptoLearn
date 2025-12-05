@@ -13,6 +13,7 @@ interface AuthContextType {
   updateProfile: (displayName: string) => Promise<{ error: Error | null }>;
   updateEmail: (newEmail: string) => Promise<{ error: Error | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
+  updateAvatar: (file: File) => Promise<{ error: Error | null; url?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -108,6 +109,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
+  const updateAvatar = async (file: File) => {
+    if (!user) return { error: new Error("User not authenticated") as Error };
+    
+    const fileExt = file.name.split('.').pop();
+    const filePath = `${user.id}/avatar.${fileExt}`;
+    
+    // Upload file to storage
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file, { upsert: true });
+    
+    if (uploadError) return { error: uploadError as Error };
+    
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+    
+    // Update user metadata
+    const { error: updateError } = await supabase.auth.updateUser({
+      data: { avatar_url: publicUrl }
+    });
+    
+    if (updateError) return { error: updateError as Error };
+    
+    // Update profiles table
+    await supabase
+      .from('profiles')
+      .update({ avatar_url: publicUrl })
+      .eq('id', user.id);
+    
+    return { error: null, url: publicUrl };
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -119,7 +154,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signOut,
       updateProfile,
       updateEmail,
-      updatePassword
+      updatePassword,
+      updateAvatar
     }}>
       {children}
     </AuthContext.Provider>

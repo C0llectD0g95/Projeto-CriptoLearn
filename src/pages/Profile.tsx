@@ -30,16 +30,18 @@ import {
   Trash2,
   Pencil,
   Key,
-  Loader2
+  Loader2,
+  Camera
 } from "lucide-react";
 import { Navigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 
 const Profile = () => {
-  const { user, loading, updateProfile, updateEmail, updatePassword } = useAuth();
+  const { user, loading, updateProfile, updateEmail, updatePassword, updateAvatar } = useAuth();
   const { walletAddress, balance, savedWallets } = useWallet();
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Edit profile state
   const [editingProfile, setEditingProfile] = useState(false);
@@ -56,9 +58,59 @@ const Profile = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
+  
+  // Avatar upload state
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const getInitials = (email: string) => {
     return email.slice(0, 2).toUpperCase();
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Erro",
+        description: "Por favor, selecione uma imagem válida.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Erro",
+        description: "A imagem deve ter no máximo 5MB.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    const { error } = await updateAvatar(file);
+    setUploadingAvatar(false);
+
+    if (error) {
+      toast({
+        title: "Erro ao atualizar foto",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Foto atualizada!",
+        description: "Sua foto de perfil foi alterada com sucesso.",
+      });
+    }
+
+    // Clear the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const copyAddress = async (address: string) => {
@@ -227,12 +279,32 @@ const Profile = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center gap-6">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={user.user_metadata?.avatar_url} />
-                  <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
-                    {getInitials(user.email || "U")}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative group">
+                  <Avatar className="h-20 w-20">
+                    <AvatarImage src={user.user_metadata?.avatar_url} />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
+                      {getInitials(user.email || "U")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                  >
+                    {uploadingAvatar ? (
+                      <Loader2 className="h-6 w-6 text-white animate-spin" />
+                    ) : (
+                      <Camera className="h-6 w-6 text-white" />
+                    )}
+                  </button>
+                </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="text-xl font-semibold">
