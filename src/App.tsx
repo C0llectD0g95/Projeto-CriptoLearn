@@ -8,7 +8,7 @@ import { WalletProvider } from "@/hooks/useWallet";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
 import Courses from "./pages/Courses";
 import NotFound from "./pages/NotFound";
 
@@ -26,7 +26,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/perfil" element={<Profile />} />
                 <Route path="/cursos" element={<Courses />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

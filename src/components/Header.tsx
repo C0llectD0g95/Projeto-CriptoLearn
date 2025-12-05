@@ -12,7 +12,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import WalletButton from "./WalletButton";
 import { ThemeToggle } from "./ThemeToggle";
-import { LogOut, User, Settings, LayoutDashboard, BookOpen } from "lucide-react";
+import { LogOut, User, Settings, BookOpen } from "lucide-react";
 
 const Header = () => {
   const { user, signOut, loading } = useAuth();
@@ -63,14 +63,10 @@ const Header = () => {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/dashboard">
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                    Dashboard
+                  <Link to="/perfil">
+                    <User className="h-4 w-4 mr-2" />
+                    Perfil
                   </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <User className="h-4 w-4 mr-2" />
-                  Perfil
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Settings className="h-4 w-4 mr-2" />
