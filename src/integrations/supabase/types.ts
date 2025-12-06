@@ -41,6 +41,89 @@ export type Database = {
         }
         Relationships: []
       }
+      proposal_votes: {
+        Row: {
+          created_at: string
+          id: string
+          proposal_id: string
+          user_id: string
+          vote_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          proposal_id: string
+          user_id: string
+          vote_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          proposal_id?: string
+          user_id?: string
+          vote_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_votes_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposals: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          ends_at: string | null
+          id: string
+          status: Database["public"]["Enums"]["proposal_status"]
+          title: string
+          votes_against: number
+          votes_for: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description: string
+          ends_at?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["proposal_status"]
+          title: string
+          votes_against?: number
+          votes_for?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          ends_at?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["proposal_status"]
+          title?: string
+          votes_against?: number
+          votes_for?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_progress: {
         Row: {
           completed: boolean
@@ -122,7 +205,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      proposal_status: "active" | "passed" | "rejected" | "pending"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -249,6 +332,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      proposal_status: ["active", "passed", "rejected", "pending"],
+    },
   },
 } as const
