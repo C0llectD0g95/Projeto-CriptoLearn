@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { Book, Clock, ChevronDown, ChevronUp, CheckCircle, Circle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Book, Clock, ChevronDown, ChevronUp, CheckCircle, Circle, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import Header from "@/components/Header";
+import { useCourseProgress } from "@/hooks/useCourseProgress";
 
 interface Lesson {
   id: string;
@@ -110,10 +111,39 @@ Se passarem nessa verificação, eles se tornam um security token, podendo ser n
 
 export default function Courses() {
   const [openModules, setOpenModules] = useState<string[]>(["module-1"]);
-  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(
-    coursesData.modules[0].lessons[0]
-  );
-  const [completedLessons, setCompletedLessons] = useState<string[]>([]);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  
+  const {
+    completedLessons,
+    lastAccessedLesson,
+    loading,
+    toggleLessonComplete,
+    updateLastAccessed,
+    isAuthenticated,
+  } = useCourseProgress();
+
+  // Restore last accessed lesson or default to first lesson
+  useEffect(() => {
+    if (loading) return;
+
+    if (lastAccessedLesson) {
+      // Find the lesson in the course data
+      for (const module of coursesData.modules) {
+        const lesson = module.lessons.find((l) => l.id === lastAccessedLesson);
+        if (lesson) {
+          setSelectedLesson(lesson);
+          // Open the module containing this lesson
+          if (!openModules.includes(module.id)) {
+            setOpenModules((prev) => [...prev, module.id]);
+          }
+          return;
+        }
+      }
+    }
+    
+    // Default to first lesson
+    setSelectedLesson(coursesData.modules[0].lessons[0]);
+  }, [loading, lastAccessedLesson]);
 
   const toggleModule = (moduleId: string) => {
     setOpenModules((prev) =>
@@ -123,12 +153,13 @@ export default function Courses() {
     );
   };
 
+  const handleSelectLesson = (lesson: Lesson) => {
+    setSelectedLesson(lesson);
+    updateLastAccessed(lesson.id);
+  };
+
   const markAsCompleted = (lessonId: string) => {
-    setCompletedLessons((prev) =>
-      prev.includes(lessonId)
-        ? prev.filter((id) => id !== lessonId)
-        : [...prev, lessonId]
-    );
+    toggleLessonComplete(lessonId);
   };
 
   const totalLessons = coursesData.modules.reduce(
@@ -214,7 +245,7 @@ export default function Courses() {
                         {module.lessons.map((lesson) => (
                           <li key={lesson.id}>
                             <button
-                              onClick={() => setSelectedLesson(lesson)}
+                              onClick={() => handleSelectLesson(lesson)}
                               className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all ${
                                 selectedLesson?.id === lesson.id
                                   ? "bg-crypto-purple/20 text-crypto-purple"
@@ -240,7 +271,13 @@ export default function Courses() {
 
           {/* Main Content - Lesson */}
           <div className="lg:col-span-2">
-            {selectedLesson && (
+            {loading ? (
+              <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+                <CardContent className="flex items-center justify-center py-20">
+                  <Loader2 className="h-8 w-8 animate-spin text-crypto-purple" />
+                </CardContent>
+              </Card>
+            ) : selectedLesson && (
               <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
                 <CardHeader>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
@@ -296,7 +333,7 @@ export default function Courses() {
                         return nextLesson ? (
                           <Button
                             variant="outline"
-                            onClick={() => setSelectedLesson(nextLesson)}
+                            onClick={() => handleSelectLesson(nextLesson)}
                           >
                             Próxima Aula →
                           </Button>
