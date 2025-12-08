@@ -1,0 +1,190 @@
+import { Quiz } from "@/components/ModuleQuiz";
+
+export const quizzes: Quiz[] = [
+  {
+    moduleId: "module-1",
+    title: "Quiz - Módulo 1: Tokens",
+    questions: [
+      {
+        id: "q1-1",
+        question: "O que é um token no mundo das criptomoedas?",
+        options: [
+          "Apenas uma moeda física",
+          "Uma representação virtual de um ativo registrado em uma blockchain",
+          "Um código de desconto",
+          "Uma senha de acesso"
+        ],
+        correctAnswer: 1,
+        explanation: "Um token é uma representação virtual de um ativo que possui valor monetário e está registrado em uma blockchain."
+      },
+      {
+        id: "q1-2",
+        question: "Qual a relação entre tokens e criptomoedas?",
+        options: [
+          "São a mesma coisa",
+          "Nem todo token é uma criptomoeda, mas toda criptomoeda é um token",
+          "Tokens são sempre mais valiosos que criptomoedas",
+          "Criptomoedas não são tokens"
+        ],
+        correctAnswer: 1,
+        explanation: "Toda criptomoeda é um token, mas nem todo token é uma criptomoeda. Tokens podem ter diversas funções além de servir como dinheiro."
+      },
+      {
+        id: "q1-3",
+        question: "O que são NFTs?",
+        options: [
+          "Tokens que podem ser trocados por outros iguais",
+          "Tokens não fungíveis que representam itens únicos",
+          "Um tipo de criptomoeda de pagamento",
+          "Tokens de governança"
+        ],
+        correctAnswer: 1,
+        explanation: "NFTs (Non-Fungible Tokens) são tokens que representam itens únicos e exclusivos, como obras digitais e itens de jogos."
+      },
+      {
+        id: "q1-4",
+        question: "Qual é a principal função dos tokens de governança?",
+        options: [
+          "Servir como dinheiro",
+          "Dar descontos em produtos",
+          "Permitir que detentores votem em propostas do projeto",
+          "Representar ativos imobiliários"
+        ],
+        correctAnswer: 2,
+        explanation: "Os tokens de governança concedem ao detentor o poder do voto, permitindo participar de decisões sobre mudanças em um projeto."
+      },
+      {
+        id: "q1-5",
+        question: "O que são Security Tokens?",
+        options: [
+          "Tokens que garantem segurança na internet",
+          "Tokens que funcionam como ativos mobiliários regulamentados",
+          "Tokens de pagamento seguros",
+          "Senhas de segurança digitais"
+        ],
+        correctAnswer: 1,
+        explanation: "Security Tokens funcionam como ativos mobiliários (como ações) e precisam passar por verificação regulatória chamada 'Howey Test'."
+      }
+    ]
+  },
+  {
+    moduleId: "module-2",
+    title: "Quiz - Módulo 2: Criptomoedas",
+    questions: [
+      {
+        id: "q2-1",
+        question: "O que é uma criptomoeda?",
+        options: [
+          "Dinheiro emitido pelo governo de forma digital",
+          "Um token que atua como dinheiro digital não emitido por governos",
+          "Apenas uma forma de investimento",
+          "Um tipo de cartão de crédito virtual"
+        ],
+        correctAnswer: 1,
+        explanation: "Uma criptomoeda é um tipo de token que atua como dinheiro digital não emitido por nenhum governo."
+      },
+      {
+        id: "q2-2",
+        question: "Quem valida as transações de criptomoedas na blockchain?",
+        options: [
+          "Bancos centrais",
+          "Governos",
+          "Mineradores",
+          "Empresas de tecnologia"
+        ],
+        correctAnswer: 2,
+        explanation: "As transações de criptomoedas são registradas e validadas por mineradores na blockchain."
+      },
+      {
+        id: "q2-3",
+        question: "Qual NÃO é uma vantagem de investir em criptomoedas?",
+        options: [
+          "Alta liquidez",
+          "Mercado funciona 24 horas",
+          "Garantia de lucro sempre",
+          "Transações rápidas e baratas"
+        ],
+        correctAnswer: 2,
+        explanation: "Não existe garantia de lucro em criptomoedas. O mercado envolve riscos elevados, incluindo forte volatilidade e possibilidade de perda total."
+      },
+      {
+        id: "q2-4",
+        question: "Qual é um dos principais riscos de investir em criptomoedas?",
+        options: [
+          "Transações muito lentas",
+          "Impossibilidade de diversificação",
+          "Forte volatilidade dos preços",
+          "Taxas muito altas"
+        ],
+        correctAnswer: 2,
+        explanation: "A forte volatilidade é um dos principais riscos, junto com ausência de regulação clara e possibilidade de perda total do capital."
+      }
+    ]
+  },
+  {
+    moduleId: "module-3",
+    title: "Quiz - Módulo 3: Carteiras",
+    questions: [
+      {
+        id: "q3-1",
+        question: "O que são carteiras de criptomoeda (wallets)?",
+        options: [
+          "Carteiras físicas para guardar dinheiro",
+          "Softwares para ver e transferir ativos na blockchain",
+          "Contas bancárias digitais",
+          "Aplicativos de bancos tradicionais"
+        ],
+        correctAnswer: 1,
+        explanation: "Carteiras de criptomoeda são softwares que permitem ao usuário ver e transferir seus ativos armazenados na blockchain."
+      },
+      {
+        id: "q3-2",
+        question: "Qual é a função do 'Endereço' em uma carteira?",
+        options: [
+          "Funciona como senha de acesso",
+          "É usado para recuperar a conta",
+          "Serve como identificador público para receber transferências",
+          "Protege contra hackers"
+        ],
+        correctAnswer: 2,
+        explanation: "O endereço é uma chave pública que serve como identificador da conta, usado para pagar e receber transferências. É como a chave do PIX."
+      },
+      {
+        id: "q3-3",
+        question: "O que acontece se você perder sua Frase de Recuperação?",
+        options: [
+          "Nada, você pode criar uma nova",
+          "O banco ajuda a recuperar",
+          "Você perde acesso permanente à sua carteira",
+          "Seus ativos são transferidos automaticamente"
+        ],
+        correctAnswer: 2,
+        explanation: "Se você perder a frase de recuperação, você perde acesso permanente à sua carteira e seus ativos."
+      },
+      {
+        id: "q3-4",
+        question: "Qual é a diferença entre Hot Wallets e Cold Wallets?",
+        options: [
+          "Hot Wallets são mais seguras",
+          "Cold Wallets estão conectadas à internet",
+          "Hot Wallets estão conectadas à internet, Cold Wallets não",
+          "Não há diferença significativa"
+        ],
+        correctAnswer: 2,
+        explanation: "Hot Wallets estão conectadas à internet (mais práticas, menos seguras). Cold Wallets ficam offline (mais seguras, menos práticas)."
+      },
+      {
+        id: "q3-5",
+        question: "O que é uma Paper Wallet?",
+        options: [
+          "Uma carteira digital em papel",
+          "Um papel com chave pública e privada da carteira",
+          "Um tipo de Hot Wallet",
+          "Um documento bancário"
+        ],
+        correctAnswer: 1,
+        explanation: "Uma Paper Wallet é um pedaço de papel que contém a chave pública e a chave privada da sua carteira, sendo um tipo de Cold Wallet."
+      }
+    ]
+  }
+];
