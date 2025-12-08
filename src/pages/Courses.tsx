@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import { Book, Clock, ChevronDown, ChevronUp, CheckCircle, Circle, Loader2 } from "lucide-react";
+import { Book, Clock, ChevronDown, ChevronUp, CheckCircle, Circle, Loader2, HelpCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import Header from "@/components/Header";
 import { useCourseProgress } from "@/hooks/useCourseProgress";
+import ModuleQuiz from "@/components/ModuleQuiz";
+import { quizzes } from "@/data/quizzes";
 
 interface Lesson {
   id: string;
@@ -184,6 +186,8 @@ As Hot Wallets são carteiras que estão conectadas à Internet. Apesar de serem
 export default function Courses() {
   const [openModules, setOpenModules] = useState<string[]>(["module-1"]);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [selectedQuiz, setSelectedQuiz] = useState<string | null>(null);
+  const [completedQuizzes, setCompletedQuizzes] = useState<string[]>([]);
   
   const {
     completedLessons,
@@ -227,7 +231,25 @@ export default function Courses() {
 
   const handleSelectLesson = (lesson: Lesson) => {
     setSelectedLesson(lesson);
+    setSelectedQuiz(null);
     updateLastAccessed(lesson.id);
+  };
+
+  const handleSelectQuiz = (moduleId: string) => {
+    setSelectedQuiz(moduleId);
+    setSelectedLesson(null);
+  };
+
+  const handleQuizComplete = (moduleId: string, passed: boolean) => {
+    if (passed && !completedQuizzes.includes(moduleId)) {
+      setCompletedQuizzes((prev) => [...prev, moduleId]);
+    }
+  };
+
+  const isModuleComplete = (moduleId: string) => {
+    const module = coursesData.modules.find((m) => m.id === moduleId);
+    if (!module) return false;
+    return module.lessons.every((lesson) => completedLessons.includes(lesson.id));
   };
 
   const markAsCompleted = (lessonId: string) => {
@@ -333,6 +355,27 @@ export default function Courses() {
                             </button>
                           </li>
                         ))}
+                        {/* Quiz item */}
+                        <li>
+                          <button
+                            onClick={() => handleSelectQuiz(module.id)}
+                            disabled={!isModuleComplete(module.id)}
+                            className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all ${
+                              selectedQuiz === module.id
+                                ? "bg-crypto-purple/20 text-crypto-purple"
+                                : !isModuleComplete(module.id)
+                                ? "opacity-50 cursor-not-allowed"
+                                : "hover:bg-muted/50 text-foreground"
+                            }`}
+                          >
+                            {completedQuizzes.includes(module.id) ? (
+                              <CheckCircle className="h-4 w-4 text-crypto-green flex-shrink-0" />
+                            ) : (
+                              <HelpCircle className="h-4 w-4 text-crypto-blue flex-shrink-0" />
+                            )}
+                            <span className="text-sm">Quiz do Módulo</span>
+                          </button>
+                        </li>
                       </ul>
                     </CardContent>
                   </CollapsibleContent>
@@ -341,7 +384,7 @@ export default function Courses() {
             ))}
           </div>
 
-          {/* Main Content - Lesson */}
+          {/* Main Content - Lesson or Quiz */}
           <div className="lg:col-span-2">
             {loading ? (
               <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
@@ -349,7 +392,19 @@ export default function Courses() {
                   <Loader2 className="h-8 w-8 animate-spin text-crypto-purple" />
                 </CardContent>
               </Card>
-            ) : selectedLesson && (
+            ) : selectedQuiz ? (
+              (() => {
+                const quiz = quizzes.find((q) => q.moduleId === selectedQuiz);
+                if (!quiz) return null;
+                return (
+                  <ModuleQuiz
+                    quiz={quiz}
+                    onComplete={(passed, score) => handleQuizComplete(selectedQuiz, passed)}
+                    isCompleted={completedQuizzes.includes(selectedQuiz)}
+                  />
+                );
+              })()
+            ) : selectedLesson ? (
               <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
                 <CardHeader>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
@@ -402,6 +457,20 @@ export default function Courses() {
                           (l) => l.id === selectedLesson.id
                         );
                         
+                        // Check if this is the last lesson in the module
+                        const isLastLessonInModule = currentLessonIndex === currentModule.lessons.length - 1;
+                        
+                        if (isLastLessonInModule && isModuleComplete(currentModule.id)) {
+                          return (
+                            <Button
+                              variant="outline"
+                              onClick={() => handleSelectQuiz(currentModule.id)}
+                            >
+                              Fazer Quiz →
+                            </Button>
+                          );
+                        }
+                        
                         // Try next lesson in current module
                         let nextLesson = currentModule.lessons[currentLessonIndex + 1];
                         let nextModuleId = currentModule.id;
@@ -431,7 +500,7 @@ export default function Courses() {
                   </div>
                 </CardContent>
               </Card>
-            )}
+            ) : null}
           </div>
         </div>
       </main>
