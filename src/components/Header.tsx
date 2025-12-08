@@ -12,7 +12,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import WalletButton from "./WalletButton";
 import { ThemeToggle } from "./ThemeToggle";
-import { LogOut, User, Settings, BookOpen, Vote, ChevronDown } from "lucide-react";
+import { LogOut, User, Settings, BookOpen, Vote, ChevronDown, Leaf, FileText } from "lucide-react";
 
 const Header = () => {
   const { user, signOut, loading } = useAuth();
@@ -42,15 +42,22 @@ const Header = () => {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="hidden sm:flex items-center gap-2">
-                <Vote className="h-4 w-4" />
-                Governança
+                <Leaf className="h-4 w-4" />
+                TEA
                 <ChevronDown className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <DropdownMenuItem asChild>
-                <Link to="/propostas">
-                  Propostas
+                <Link to="/litepaper" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Litepaper
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/propostas" className="flex items-center gap-2">
+                  <Vote className="h-4 w-4" />
+                  Governança
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
