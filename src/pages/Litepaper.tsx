@@ -113,8 +113,9 @@ const Litepaper = () => {
               <CardTitle>Roadmap</CardTitle>
             </CardHeader>
             <CardContent>
+              <p className="text-muted-foreground mb-2">Abaixo estão futuras adições para o projeto:</p>
               <p className="text-muted-foreground">
-                <span className="font-medium text-foreground">Junho de 2026:</span> Criação de um jogo P2E (Play-to-Earn) que usa o TEA como moeda para atrair jovens para aprender sobre o mundo de criptomoedas.
+                <span className="font-medium text-foreground">2026:</span> Criação de um jogo P2E (Play-to-Earn) que usa o TEA como moeda para atrair jovens para aprender sobre o mundo de criptomoedas, além da criação de um curso sobre estratégias de investimento em criptomoedas.
               </p>
             </CardContent>
           </Card>
