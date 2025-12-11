@@ -226,14 +226,15 @@ export default function Courses() {
   const [openModules, setOpenModules] = useState<string[]>(["module-1"]);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [selectedQuiz, setSelectedQuiz] = useState<string | null>(null);
-  const [completedQuizzes, setCompletedQuizzes] = useState<string[]>([]);
   
   const {
     completedLessons,
+    completedQuizzes,
     lastAccessedLesson,
     loading,
     toggleLessonComplete,
     updateLastAccessed,
+    completeQuiz,
     isAuthenticated,
   } = useCourseProgress();
 
@@ -281,10 +282,8 @@ export default function Courses() {
     setShowCertificate(false);
   };
 
-  const handleQuizComplete = (moduleId: string, passed: boolean) => {
-    if (passed && !completedQuizzes.includes(moduleId)) {
-      setCompletedQuizzes((prev) => [...prev, moduleId]);
-    }
+  const handleQuizComplete = (moduleId: string, passed: boolean, score: number) => {
+    completeQuiz(moduleId, passed, score);
   };
 
   const isModuleComplete = (moduleId: string) => {
@@ -478,7 +477,7 @@ export default function Courses() {
                 return (
                   <ModuleQuiz
                     quiz={quiz}
-                    onComplete={(passed, score) => handleQuizComplete(selectedQuiz, passed)}
+                    onComplete={(passed, score) => handleQuizComplete(selectedQuiz, passed, score)}
                     isCompleted={completedQuizzes.includes(selectedQuiz)}
                   />
                 );
