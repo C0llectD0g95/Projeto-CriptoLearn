@@ -182,8 +182,8 @@ As Hot Wallets são carteiras que estão conectadas à Internet. Apesar de serem
     },
     {
       id: "module-4",
-      title: "Módulo 4 - Blockchains",
-      description: "Entender o conceito de blockchain e como funciona a blockchain.",
+      title: "Módulo 4 - Blockchains e Smart Contracts",
+      description: "Entender o conceito de blockchain, como funciona a blockchain, o que são os Smart Contracts e qual a sua importância.",
       lessons: [
         {
           id: "lesson-4-1",
@@ -215,6 +215,36 @@ Um exemplo de uma solução de segunda camada é a "Polygon zkEVM", que é uma r
 Vamos chamar esse bloco de "Bloco 1". Após o selamento do bloco 1, é criado um novo bloco (bloco 2) para poder armazenar mais transações. Porém, quando esse bloco é preenchido e selado, o hash que ele ganha possui uma "parte" do hash do hash anterior (que seria o bloco 1).
 
 Dessa forma, os blocos se conectam através da "corrente" chamada de hash (por isso o nome é "blockchain"). Por causa disso, se o bloco 1 for invalidado, o bloco 2, 3, 4, e assim por diante, serão invalidados.`,
+          completed: false,
+        },
+        {
+          id: "lesson-4-4",
+          title: "O que são os Smart Contracts",
+          content: `Um Smart Contract é um código escrito em uma linguagem própria (como Solidity) e implantado na blockchain. Uma vez implantado, ele fica imutável, público e autônomo.
+
+Eles possuem muitos propósitos, mas, dentre esses propósitos, destacam-se:
+
+• Criar tokens (ERC-20, ERC-721, ERC-1155)
+• Gerenciar saldos de usuários
+• Fazer staking
+• Realizar swaps (como Uniswap)
+• Guardar informações na blockchain
+• Gerenciar governança (votações DAO)
+• Criar regras de jogos (GameFi)
+• Distribuir recompensas
+• Fazer vesting, burns, mint, etc.
+
+Tenha em mente que nem toda blockchain usa os Smart Contracts.`,
+          completed: false,
+        },
+        {
+          id: "lesson-4-5",
+          title: "A importância dos Smart Contracts",
+          content: `Os Smart Contracts realizam a eliminação da burocracia, automatizando transações e operações feitas com um token e diminuindo o risco de fraude.
+
+Eles permitem que acordos sejam executados automaticamente quando certas condições são atendidas, sem a necessidade de intermediários.
+
+Isso traz mais transparência, segurança e eficiência para diversas operações no mundo das criptomoedas e além.`,
           completed: false,
         },
       ],
