@@ -71,3 +71,13 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+# Sobre o Projeto-CryptoLearning
+O Projeto é dividido em duas partes: A primeira é um token cuja principal funcionalidade é fazer tudo que uma criptomoeda normal faz, porém, sem o mesmo risco, atuando como uma ferramenta didática. A segunda é um curso gratuito que ensina o usuário sobre o mundo dos cripto ativos
+## Objetivo do Projeto
+Ensinar as pessoas sobre as vantagens e riscos de investir em cripto-ativos.
+## Público-Alvo
+Pessoas que querem aprender sobre cripto-ativos, independente da idade.
+## Tecnologias Usadas
+**Lovable:** O Lovable foi usado para criar o site do curso
+**Gemini:** Foram usados dois gems personalizados no projeto: O primeiro foi responsável por criar a estrutura econômica do token, enquanto o segundo criou os smarts contracts do token a partir das especificações da estrutura econômica.
