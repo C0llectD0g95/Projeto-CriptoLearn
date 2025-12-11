@@ -174,7 +174,10 @@ const Litepaper = () => {
             </CardHeader>
             <CardContent className="space-y-2">
               <p className="text-muted-foreground">
-                <span className="font-medium text-foreground">Github:</span> Descrição
+                <span className="font-medium text-foreground">Github:</span>{" "}
+                <a href="https://github.com/C0llectD0g95" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  https://github.com/C0llectD0g95
+                </a>
               </p>
               <p className="text-muted-foreground">
                 <span className="font-medium text-foreground">Discord:</span> @cd.95 (874266841273470986)
