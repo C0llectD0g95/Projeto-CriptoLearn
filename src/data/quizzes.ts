@@ -186,5 +186,71 @@ export const quizzes: Quiz[] = [
         explanation: "Uma Paper Wallet é um pedaço de papel que contém a chave pública e a chave privada da sua carteira, sendo um tipo de Cold Wallet."
       }
     ]
+  },
+  {
+    moduleId: "module-4",
+    title: "Quiz - Módulo 4: Blockchains",
+    questions: [
+      {
+        id: "q4-1",
+        question: "O que é uma blockchain?",
+        options: [
+          "Um banco de dados centralizado",
+          "Um registro descentralizado de transações que qualquer um pode ver",
+          "Um software para minerar criptomoedas",
+          "Uma carteira digital"
+        ],
+        correctAnswer: 1,
+        explanation: "A blockchain é um registro de transações feitas usando tokens que qualquer um pode ver, sendo normalmente descentralizada."
+      },
+      {
+        id: "q4-2",
+        question: "Quem são os 'nós' ou 'mineradores' na blockchain?",
+        options: [
+          "Usuários comuns da rede",
+          "Bancos que validam transações",
+          "Computadores poderosos que registram e validam transações",
+          "Empresas de tecnologia"
+        ],
+        correctAnswer: 2,
+        explanation: "Os nós ou mineradores são computadores poderosos capazes de fazer o trabalho de registro e validação de transações na blockchain."
+      },
+      {
+        id: "q4-3",
+        question: "O que são soluções de segunda camada (Layer 2)?",
+        options: [
+          "Atualizações de segurança da blockchain",
+          "Redes que funcionam como ramificações para reduzir taxas",
+          "Novas criptomoedas",
+          "Métodos de mineração mais rápidos"
+        ],
+        correctAnswer: 1,
+        explanation: "As soluções de segunda camada são redes que funcionam como 'ramificações' de uma rede principal, permitindo taxas de gás mais baixas."
+      },
+      {
+        id: "q4-4",
+        question: "O que é um 'hash' na blockchain?",
+        options: [
+          "Uma taxa de transação",
+          "Um identificador único que conecta os blocos",
+          "Um tipo de criptomoeda",
+          "Uma carteira digital"
+        ],
+        correctAnswer: 1,
+        explanation: "O hash é um identificador que cada bloco recebe quando é selado, e contém parte do hash anterior, conectando os blocos em uma corrente."
+      },
+      {
+        id: "q4-5",
+        question: "O que acontece se um bloco anterior for invalidado?",
+        options: [
+          "Nada, os blocos são independentes",
+          "Apenas aquele bloco é afetado",
+          "Todos os blocos seguintes também são invalidados",
+          "A blockchain é reiniciada"
+        ],
+        correctAnswer: 2,
+        explanation: "Por causa da conexão através do hash, se um bloco for invalidado, todos os blocos seguintes (2, 3, 4, etc.) também serão invalidados."
+      }
+    ]
   }
 ];

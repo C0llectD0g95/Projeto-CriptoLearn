@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Book, Clock, ChevronDown, ChevronUp, CheckCircle, Circle, Loader2, HelpCircle } from "lucide-react";
+import { Book, Clock, ChevronDown, ChevronUp, CheckCircle, Circle, Loader2, HelpCircle, Award } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import Header from "@/components/Header";
 import { useCourseProgress } from "@/hooks/useCourseProgress";
 import ModuleQuiz from "@/components/ModuleQuiz";
 import { quizzes } from "@/data/quizzes";
-
+import CourseCertificate from "@/components/CourseCertificate";
 interface Lesson {
   id: string;
   title: string;
@@ -180,6 +180,45 @@ As Hot Wallets são carteiras que estão conectadas à Internet. Apesar de serem
         },
       ],
     },
+    {
+      id: "module-4",
+      title: "Módulo 4 - Blockchains",
+      description: "Entender o conceito de blockchain e como funciona a blockchain.",
+      lessons: [
+        {
+          id: "lesson-4-1",
+          title: "O que são as Blockchains?",
+          content: `Imagine que você anota em um livro cada pagamento que você faz ou recebe, com informações como data, hora, quem enviou, quem recebeu. Esse livro é como se fosse a Blockchain. Em outras palavras, a Blockchain é um registro de transações e operações feitas usando um token e que qualquer um pode ver.
+
+O registro e validação de transações são feitas pelos nós (ou também conhecidos como "mineradores"), computadores poderosos capazes de fazer esse trabalho. As blockchains também são chamadas de network ou rede.
+
+Normalmente, as blockchains são descentralizadas, ou seja, não tem uma única pessoa controlando ela, e sim todos aqueles que participam dela. Essa descentralização é um dos motivos para a blockchain ser considerada segura, uma vez que, para atacar a blockchain, seria necessário atacar todos os nós.
+
+Uma vez que uma transação seja registrada na blockchain, não é possível apagar ou alterar esse registro.`,
+          completed: false,
+        },
+        {
+          id: "lesson-4-2",
+          title: "Soluções de Segunda Camada",
+          content: `As soluções de segunda camada (ou também conhecidas como Layer 2 ou L2) são redes que funcionam como "ramificações" de uma rede.
+
+Um dos motivos para a criação de soluções de segunda camada é para permitir que os usuários negociem um token pagando taxas de gás mais baixas.
+
+Um exemplo de uma solução de segunda camada é a "Polygon zkEVM", que é uma rede de solução de segunda camada da rede do Ethereum.`,
+          completed: false,
+        },
+        {
+          id: "lesson-4-3",
+          title: "Funcionamento de uma Blockchain",
+          content: `Quando alguém envia uma quantidade de tokens para outra pessoa (A → B), essa transação é validada, registrada e guardada dentro de um bloco. Quando esse bloco é preenchido de transações, ele é selado e ganha duas coisas: Uma timestamp (Data e hora de quando ele foi selado) e um identificador chamado de hash.
+
+Vamos chamar esse bloco de "Bloco 1". Após o selamento do bloco 1, é criado um novo bloco (bloco 2) para poder armazenar mais transações. Porém, quando esse bloco é preenchido e selado, o hash que ele ganha possui uma "parte" do hash do hash anterior (que seria o bloco 1).
+
+Dessa forma, os blocos se conectam através da "corrente" chamada de hash (por isso o nome é "blockchain"). Por causa disso, se o bloco 1 for invalidado, o bloco 2, 3, 4, e assim por diante, serão invalidados.`,
+          completed: false,
+        },
+      ],
+    },
   ] as Module[],
 };
 
@@ -232,12 +271,14 @@ export default function Courses() {
   const handleSelectLesson = (lesson: Lesson) => {
     setSelectedLesson(lesson);
     setSelectedQuiz(null);
+    setShowCertificate(false);
     updateLastAccessed(lesson.id);
   };
 
   const handleSelectQuiz = (moduleId: string) => {
     setSelectedQuiz(moduleId);
     setSelectedLesson(null);
+    setShowCertificate(false);
   };
 
   const handleQuizComplete = (moduleId: string, passed: boolean) => {
@@ -261,6 +302,12 @@ export default function Courses() {
     0
   );
   const progress = Math.round((completedLessons.length / totalLessons) * 100);
+
+  const isCourseComplete = 
+    coursesData.modules.every((m) => isModuleComplete(m.id)) &&
+    coursesData.modules.every((m) => completedQuizzes.includes(m.id));
+
+  const [showCertificate, setShowCertificate] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
@@ -382,9 +429,35 @@ export default function Courses() {
                 </Card>
               </Collapsible>
             ))}
+
+            {/* Certificate Card */}
+            {isCourseComplete && (
+              <Card className="border-crypto-gold/30 bg-gradient-to-br from-crypto-gold/10 to-card/50">
+                <CardContent className="p-4">
+                  <button
+                    onClick={() => {
+                      setShowCertificate(true);
+                      setSelectedLesson(null);
+                      setSelectedQuiz(null);
+                    }}
+                    className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all ${
+                      showCertificate
+                        ? "bg-crypto-gold/20 text-crypto-gold"
+                        : "hover:bg-crypto-gold/10 text-foreground"
+                    }`}
+                  >
+                    <Award className="h-5 w-5 text-crypto-gold" />
+                    <div>
+                      <p className="font-medium">Certificado</p>
+                      <p className="text-xs text-muted-foreground">Curso concluído!</p>
+                    </div>
+                  </button>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
-          {/* Main Content - Lesson or Quiz */}
+          {/* Main Content - Lesson, Quiz or Certificate */}
           <div className="lg:col-span-2">
             {loading ? (
               <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
@@ -392,6 +465,12 @@ export default function Courses() {
                   <Loader2 className="h-8 w-8 animate-spin text-crypto-purple" />
                 </CardContent>
               </Card>
+            ) : showCertificate ? (
+              <CourseCertificate
+                courseName={coursesData.title}
+                completedModules={coursesData.modules.length}
+                totalModules={coursesData.modules.length}
+              />
             ) : selectedQuiz ? (
               (() => {
                 const quiz = quizzes.find((q) => q.moduleId === selectedQuiz);
