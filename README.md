@@ -80,4 +80,5 @@ Ensinar as pessoas sobre as vantagens e riscos de investir em cripto-ativos.
 Pessoas que querem aprender sobre cripto-ativos, independente da idade.
 ## Tecnologias Usadas
 **Lovable:** O Lovable foi usado para criar o site do curso
+
 **Gemini:** Foram usados dois gems personalizados no projeto: O primeiro foi responsável por criar a estrutura econômica do token, enquanto o segundo criou os smarts contracts do token a partir das especificações da estrutura econômica.
