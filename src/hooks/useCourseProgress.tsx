@@ -2,15 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
-interface ProgressData {
-  lessonId: string;
-  completed: boolean;
-  lastAccessedAt: string;
-}
-
 export function useCourseProgress() {
   const { user } = useAuth();
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
+  const [completedQuizzes, setCompletedQuizzes] = useState<string[]>([]);
   const [lastAccessedLesson, setLastAccessedLesson] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -19,30 +14,46 @@ export function useCourseProgress() {
     const loadProgress = async () => {
       if (!user) {
         setCompletedLessons([]);
+        setCompletedQuizzes([]);
         setLastAccessedLesson(null);
         setLoading(false);
         return;
       }
 
       try {
-        const { data, error } = await supabase
+        // Load lesson progress
+        const { data: lessonData, error: lessonError } = await supabase
           .from("user_progress")
           .select("lesson_id, completed, last_accessed_at")
           .eq("user_id", user.id)
           .order("last_accessed_at", { ascending: false });
 
-        if (error) throw error;
+        if (lessonError) throw lessonError;
 
-        if (data) {
-          const completed = data
+        if (lessonData) {
+          const completed = lessonData
             .filter((item) => item.completed)
             .map((item) => item.lesson_id);
           setCompletedLessons(completed);
 
-          // Get the most recently accessed lesson
-          if (data.length > 0) {
-            setLastAccessedLesson(data[0].lesson_id);
+          if (lessonData.length > 0) {
+            setLastAccessedLesson(lessonData[0].lesson_id);
           }
+        }
+
+        // Load quiz progress
+        const { data: quizData, error: quizError } = await supabase
+          .from("quiz_progress")
+          .select("quiz_id, passed")
+          .eq("user_id", user.id);
+
+        if (quizError) throw quizError;
+
+        if (quizData) {
+          const passedQuizzes = quizData
+            .filter((item) => item.passed)
+            .map((item) => item.quiz_id);
+          setCompletedQuizzes(passedQuizzes);
         }
       } catch (error) {
         console.error("Error loading progress:", error);
@@ -83,7 +94,6 @@ export function useCourseProgress() {
         if (error) throw error;
       } catch (error) {
         console.error("Error updating progress:", error);
-        // Revert on error
         setCompletedLessons(completedLessons);
       }
     },
@@ -118,12 +128,48 @@ export function useCourseProgress() {
     [user, completedLessons]
   );
 
+  // Mark quiz as completed
+  const completeQuiz = useCallback(
+    async (quizId: string, passed: boolean, score: number) => {
+      if (!user) return;
+
+      if (passed && !completedQuizzes.includes(quizId)) {
+        setCompletedQuizzes((prev) => [...prev, quizId]);
+      }
+
+      try {
+        const { error } = await supabase
+          .from("quiz_progress")
+          .upsert(
+            {
+              user_id: user.id,
+              quiz_id: quizId,
+              passed,
+              score,
+              completed_at: new Date().toISOString(),
+            },
+            { onConflict: "user_id,quiz_id" }
+          );
+
+        if (error) throw error;
+      } catch (error) {
+        console.error("Error saving quiz progress:", error);
+        if (passed) {
+          setCompletedQuizzes((prev) => prev.filter((id) => id !== quizId));
+        }
+      }
+    },
+    [user, completedQuizzes]
+  );
+
   return {
     completedLessons,
+    completedQuizzes,
     lastAccessedLesson,
     loading,
     toggleLessonComplete,
     updateLastAccessed,
+    completeQuiz,
     isAuthenticated: !!user,
   };
 }
