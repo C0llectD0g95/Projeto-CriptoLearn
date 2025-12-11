@@ -10,7 +10,6 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import Courses from "./pages/Courses";
-import Propostas from "./pages/Propostas";
 import Litepaper from "./pages/Litepaper";
 import NotFound from "./pages/NotFound";
 
@@ -30,7 +29,6 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/perfil" element={<Profile />} />
                 <Route path="/cursos" element={<Courses />} />
-                <Route path="/propostas" element={<Propostas />} />
                 <Route path="/litepaper" element={<Litepaper />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
