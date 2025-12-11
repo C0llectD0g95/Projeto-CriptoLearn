@@ -189,7 +189,7 @@ export const quizzes: Quiz[] = [
   },
   {
     moduleId: "module-4",
-    title: "Quiz - Módulo 4: Blockchains",
+    title: "Quiz - Módulo 4: Blockchains e Smart Contracts",
     questions: [
       {
         id: "q4-1",
@@ -229,27 +229,39 @@ export const quizzes: Quiz[] = [
       },
       {
         id: "q4-4",
-        question: "O que é um 'hash' na blockchain?",
+        question: "O que é um Smart Contract?",
         options: [
-          "Uma taxa de transação",
-          "Um identificador único que conecta os blocos",
-          "Um tipo de criptomoeda",
-          "Uma carteira digital"
+          "Um contrato físico digitalizado",
+          "Um código implantado na blockchain que é imutável, público e autônomo",
+          "Uma carteira inteligente",
+          "Um tipo de criptomoeda"
         ],
         correctAnswer: 1,
-        explanation: "O hash é um identificador que cada bloco recebe quando é selado, e contém parte do hash anterior, conectando os blocos em uma corrente."
+        explanation: "Um Smart Contract é um código escrito em linguagem própria (como Solidity) e implantado na blockchain, sendo imutável, público e autônomo."
       },
       {
         id: "q4-5",
-        question: "O que acontece se um bloco anterior for invalidado?",
+        question: "Qual NÃO é uma função comum dos Smart Contracts?",
         options: [
-          "Nada, os blocos são independentes",
-          "Apenas aquele bloco é afetado",
-          "Todos os blocos seguintes também são invalidados",
-          "A blockchain é reiniciada"
+          "Criar tokens (ERC-20, ERC-721)",
+          "Gerenciar governança (votações DAO)",
+          "Emitir dinheiro físico",
+          "Realizar swaps e staking"
         ],
         correctAnswer: 2,
-        explanation: "Por causa da conexão através do hash, se um bloco for invalidado, todos os blocos seguintes (2, 3, 4, etc.) também serão invalidados."
+        explanation: "Smart Contracts operam apenas no ambiente digital da blockchain. Eles podem criar tokens, gerenciar governança, fazer swaps e staking, mas não podem emitir dinheiro físico."
+      },
+      {
+        id: "q4-6",
+        question: "Qual é a principal importância dos Smart Contracts?",
+        options: [
+          "Aumentar os custos das transações",
+          "Eliminar burocracia e automatizar operações, reduzindo fraudes",
+          "Centralizar o controle das transações",
+          "Dificultar o acesso às criptomoedas"
+        ],
+        correctAnswer: 1,
+        explanation: "Os Smart Contracts eliminam burocracia, automatizam transações e operações feitas com tokens, e diminuem o risco de fraude."
       }
     ]
   }
