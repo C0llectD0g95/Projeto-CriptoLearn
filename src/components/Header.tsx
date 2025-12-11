@@ -12,7 +12,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import WalletButton from "./WalletButton";
 import { ThemeToggle } from "./ThemeToggle";
-import { LogOut, User, Settings, BookOpen, Vote, ChevronDown, Leaf, FileText } from "lucide-react";
+import { LogOut, User, Settings, BookOpen, ChevronDown, Leaf, FileText } from "lucide-react";
 
 const Header = () => {
   const { user, signOut, loading } = useAuth();
@@ -52,12 +52,6 @@ const Header = () => {
                 <Link to="/litepaper" className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Litepaper
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/propostas" className="flex items-center gap-2">
-                  <Vote className="h-4 w-4" />
-                  Governança
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
