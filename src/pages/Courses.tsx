@@ -9,7 +9,6 @@ import { useCourseProgress } from "@/hooks/useCourseProgress";
 import ModuleQuiz from "@/components/ModuleQuiz";
 import { quizzes } from "@/data/quizzes";
 import CourseCertificate from "@/components/CourseCertificate";
-import BlockchainVisualization from "@/components/BlockchainVisualization";
 interface Lesson {
   id: string;
   title: string;
@@ -533,13 +532,6 @@ export default function Courses() {
                       </p>
                     ))}
                   </div>
-
-                  {/* Interactive Blockchain Visualization */}
-                  {selectedLesson.id === "lesson-4-3" && (
-                    <div className="mt-8">
-                      <BlockchainVisualization />
-                    </div>
-                  )}
                   
                   <div className="mt-8 pt-6 border-t border-border/50 flex items-center justify-between">
                     <Button
