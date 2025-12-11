@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const Litepaper = () => {
   return (
@@ -10,7 +11,7 @@ const Litepaper = () => {
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="text-center space-y-4">
             <h1 className="text-4xl font-display font-bold">TEA</h1>
-            <p className="text-muted-foreground">Token Experimental para Aprendizado</p>
+            <p className="text-muted-foreground">Versão: 0.1</p>
           </div>
 
           <Card>
@@ -52,7 +53,7 @@ const Litepaper = () => {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                O Projeto é dividido em duas partes: A primeira é um token cuja principal funcionalidade é servir como algo para que o usuário possa fazer tudo que uma criptomoeda normal faz, porém, sem o mesmo risco, atuando como uma ferramenta didática. A segunda é um curso gratuito que ensina o usuário sobre o mundo dos cripto ativos, fornecendo um pouco do token após concluir o módulo 3 para que o usuário possa usar.
+                O Projeto é dividido em duas partes: A primeira é um token cuja principal funcionalidade é fazer tudo que uma criptomoeda normal faz, porém, sem o mesmo risco, atuando como uma ferramenta didática. A segunda é um curso gratuito que ensina o usuário sobre o mundo dos cripto ativos, fornecendo um pouco do token após concluir o módulo 3 para que o usuário possa usar.
               </p>
             </CardContent>
           </Card>
@@ -76,6 +77,37 @@ const Litepaper = () => {
 
               <div>
                 <h3 className="font-semibold mb-3">Distribuição</h3>
+                <p className="text-muted-foreground mb-4">Esta é a distribuição de tokens:</p>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Categoria</TableHead>
+                      <TableHead>Quantidade</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell>Desenvolvimento</TableCell>
+                      <TableCell>3 milhões</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>Marketing</TableCell>
+                      <TableCell>2 milhões</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>Reservas</TableCell>
+                      <TableCell>2 milhões</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>Distribuição para Usuários</TableCell>
+                      <TableCell>3 milhões</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div>
+                <h3 className="font-semibold mb-3">Distribuição de Recursos</h3>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                   <li>Fundo Educacional (Tesouraria): 45%</li>
                   <li>Recompensa de Staking/Liquidez: 25%</li>
@@ -113,10 +145,15 @@ const Litepaper = () => {
               <CardTitle>Roadmap</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground mb-2">Abaixo estão futuras adições para o projeto:</p>
-              <p className="text-muted-foreground">
-                <span className="font-medium text-foreground">2026:</span> Criação de um jogo P2E (Play-to-Earn) que usa o TEA como moeda para atrair jovens para aprender sobre o mundo de criptomoedas, além da criação de um curso sobre estratégias de investimento em criptomoedas.
-              </p>
+              <p className="text-muted-foreground mb-4">Abaixo estão futuras adições para o projeto:</p>
+              <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
+                <li>
+                  <span className="font-medium text-foreground">2026:</span> Criação de um curso sobre estratégias de investimento em criptomoedas.
+                </li>
+                <li>
+                  <span className="font-medium text-foreground">2027:</span> Criação de um jogo P2E (Play-to-Earn) que usa o TEA como moeda para atrair jovens para aprender sobre o mundo de criptomoedas.
+                </li>
+              </ol>
             </CardContent>
           </Card>
 
