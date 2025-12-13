@@ -5,10 +5,10 @@ export const CONTRACT_ADDRESSES = {
   TEA_GOVERNOR: "0x5D6a74EBda0F762fbdd3b2A990DA774B9b6bEF5B",
 } as const;
 
-// Network configuration
+// Network configuration - Polygon Amoy Testnet
 export const NETWORK_CONFIG = {
-  chainId: 1, // Ethereum Mainnet - update if using a different network
-  chainName: "Ethereum Mainnet",
-  rpcUrl: "https://eth.llamarpc.com",
-  blockExplorerUrl: "https://etherscan.io",
+  chainId: 80002,
+  chainName: "Polygon Amoy Testnet",
+  rpcUrl: "https://rpc-amoy.polygon.technology",
+  blockExplorerUrl: "https://amoy.polygonscan.com",
 } as const;
