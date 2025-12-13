@@ -53,6 +53,10 @@ export const useStaking = () => {
         provider
       );
 
+      console.log("[Staking] Fetching data for wallet:", walletAddress);
+      console.log("[Staking] TEA Token contract:", CONTRACT_ADDRESSES.TEA_TOKEN);
+      console.log("[Staking] Staking contract:", CONTRACT_ADDRESSES.TEA_STAKING);
+
       const [balance, staked, earned, total, rate, userAllowance] = await Promise.all([
         tokenContract.balanceOf(walletAddress),
         stakingContract.balanceOf(walletAddress),
@@ -61,6 +65,9 @@ export const useStaking = () => {
         stakingContract.getRewardRatePerYear(),
         tokenContract.allowance(walletAddress, CONTRACT_ADDRESSES.TEA_STAKING),
       ]);
+
+      console.log("[Staking] Raw balance from contract:", balance.toString());
+      console.log("[Staking] Formatted TEA balance:", formatEther(balance));
 
       setTeaBalance(formatEther(balance));
       setStakedBalance(formatEther(staked));
