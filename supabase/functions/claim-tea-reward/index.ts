@@ -82,18 +82,51 @@ serve(async (req) => {
       );
     }
 
-    // Get user's wallet address
+    // Get user's wallet address with connected_at date
     const { data: wallet, error: walletError } = await supabase
       .from('wallets')
-      .select('wallet_address')
+      .select('wallet_address, connected_at')
       .eq('user_id', user.id)
       .eq('is_primary', true)
-      .single();
+      .maybeSingle();
 
     if (walletError || !wallet) {
       console.log(`User ${user.id} has no primary wallet connected`);
       return new Response(
         JSON.stringify({ success: false, error: 'No wallet connected. Please connect your wallet first.' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    // Check if wallet is at least 7 days old
+    const walletCreatedAt = new Date(wallet.connected_at);
+    const now = new Date();
+    const daysSinceCreation = (now.getTime() - walletCreatedAt.getTime()) / (1000 * 60 * 60 * 24);
+    
+    if (daysSinceCreation < 7) {
+      const daysRemaining = Math.ceil(7 - daysSinceCreation);
+      console.log(`Wallet ${wallet.wallet_address} is only ${daysSinceCreation.toFixed(1)} days old`);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Sua carteira precisa ter pelo menos 7 dias de criação. Faltam ${daysRemaining} dia(s).` 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    // Check if this wallet address has already claimed the reward (regardless of user)
+    const { data: existingWalletClaim } = await supabase
+      .from('tea_rewards')
+      .select('id')
+      .eq('wallet_address', wallet.wallet_address)
+      .eq('reward_type', 'module_3_completion')
+      .maybeSingle();
+
+    if (existingWalletClaim) {
+      console.log(`Wallet ${wallet.wallet_address} already claimed module 3 reward`);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Este endereço de carteira já resgatou esta recompensa.' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
