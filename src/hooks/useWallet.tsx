@@ -3,6 +3,7 @@ import { BrowserProvider, formatEther } from "ethers";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "@/hooks/use-toast";
+import { NETWORK_CONFIG } from "@/contracts/config";
 
 declare global {
   interface Window {
@@ -20,8 +21,10 @@ interface WalletContextType {
   balance: string | null;
   isConnecting: boolean;
   hasMetaMask: boolean;
+  isCorrectNetwork: boolean;
   connectWallet: () => Promise<void>;
   disconnectWallet: () => Promise<void>;
+  switchToAmoy: () => Promise<void>;
   savedWallets: Array<{ id: string; wallet_address: string; wallet_type: string; is_primary: boolean }>;
 }
 
@@ -34,6 +37,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [savedWallets, setSavedWallets] = useState<Array<{ id: string; wallet_address: string; wallet_type: string; is_primary: boolean }>>([]);
   const [hasMetaMask, setHasMetaMask] = useState(false);
+  const [isCorrectNetwork, setIsCorrectNetwork] = useState(false);
 
   useEffect(() => {
     setHasMetaMask(typeof window !== "undefined" && !!window.ethereum?.isMetaMask);
@@ -47,8 +51,81 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user]);
 
+  // Check current network
+  const checkNetwork = async () => {
+    if (!window.ethereum) return;
+    
+    try {
+      const chainId = await window.ethereum.request({ method: "eth_chainId" }) as string;
+      const currentChainId = parseInt(chainId, 16);
+      setIsCorrectNetwork(currentChainId === NETWORK_CONFIG.chainId);
+    } catch (error) {
+      console.error("Error checking network:", error);
+    }
+  };
+
+  // Switch to Polygon Amoy
+  const switchToAmoy = async () => {
+    if (!window.ethereum) return;
+
+    const chainIdHex = `0x${NETWORK_CONFIG.chainId.toString(16)}`;
+
+    try {
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: chainIdHex }],
+      });
+      setIsCorrectNetwork(true);
+      toast({
+        title: "Rede alterada",
+        description: `Conectado à ${NETWORK_CONFIG.chainName}.`,
+      });
+    } catch (switchError: unknown) {
+      // If network doesn't exist, add it
+      if ((switchError as { code?: number })?.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [{
+              chainId: chainIdHex,
+              chainName: NETWORK_CONFIG.chainName,
+              nativeCurrency: {
+                name: "MATIC",
+                symbol: "MATIC",
+                decimals: 18,
+              },
+              rpcUrls: [NETWORK_CONFIG.rpcUrl],
+              blockExplorerUrls: [NETWORK_CONFIG.blockExplorerUrl],
+            }],
+          });
+          setIsCorrectNetwork(true);
+          toast({
+            title: "Rede adicionada",
+            description: `${NETWORK_CONFIG.chainName} foi adicionada e conectada.`,
+          });
+        } catch (addError) {
+          console.error("Error adding network:", addError);
+          toast({
+            title: "Erro ao adicionar rede",
+            description: "Não foi possível adicionar a rede Polygon Amoy.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        console.error("Error switching network:", switchError);
+        toast({
+          title: "Erro ao trocar rede",
+          description: "Não foi possível trocar para a rede Polygon Amoy.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   useEffect(() => {
     if (window.ethereum) {
+      checkNetwork();
+
       const handleAccountsChanged = (accounts: unknown) => {
         const accountsArray = accounts as string[];
         if (accountsArray.length === 0) {
@@ -60,12 +137,22 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
         }
       };
 
+      const handleChainChanged = () => {
+        checkNetwork();
+        if (walletAddress) {
+          fetchBalance(walletAddress);
+        }
+      };
+
       window.ethereum.on("accountsChanged", handleAccountsChanged);
+      window.ethereum.on("chainChanged", handleChainChanged);
+
       return () => {
         window.ethereum?.removeListener("accountsChanged", handleAccountsChanged);
+        window.ethereum?.removeListener("chainChanged", handleChainChanged);
       };
     }
-  }, []);
+  }, [walletAddress]);
 
   const fetchSavedWallets = async () => {
     if (!user) return;
@@ -108,6 +195,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       const address = accounts[0];
       setWalletAddress(address);
       await fetchBalance(address);
+      await checkNetwork();
+
+      // Auto-switch to Amoy if on wrong network
+      const chainId = await window.ethereum.request({ method: "eth_chainId" }) as string;
+      const currentChainId = parseInt(chainId, 16);
+      if (currentChainId !== NETWORK_CONFIG.chainId) {
+        await switchToAmoy();
+      }
 
       if (user) {
         const { error } = await supabase
@@ -163,8 +258,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       balance,
       isConnecting,
       hasMetaMask,
+      isCorrectNetwork,
       connectWallet,
       disconnectWallet,
+      switchToAmoy,
       savedWallets,
     }}>
       {children}
