@@ -30,8 +30,14 @@ serve(async (req) => {
     }
 
     // Create Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_PUBLISHABLE_KEY')!;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Missing Supabase environment variables');
+      throw new Error('Server configuration error');
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     });
@@ -127,10 +133,13 @@ serve(async (req) => {
     console.log(`Transaction confirmed in block: ${receipt.blockNumber}`);
 
     // Record the reward claim using service role
-    const supabaseServiceRole = createClient(
-      supabaseUrl,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!serviceRoleKey) {
+      console.error('Missing service role key');
+      throw new Error('Server configuration error');
+    }
+    
+    const supabaseServiceRole = createClient(supabaseUrl, serviceRoleKey);
 
     const { error: insertError } = await supabaseServiceRole
       .from('tea_rewards')
