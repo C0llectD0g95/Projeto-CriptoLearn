@@ -1,10 +1,13 @@
 import { useState, useCallback, useEffect } from "react";
-import { BrowserProvider, Contract, formatEther, parseEther } from "ethers";
+import { BrowserProvider, Contract, formatUnits, parseUnits } from "ethers";
 import { useWallet } from "./useWallet";
 import { toast } from "@/hooks/use-toast";
 import { CONTRACT_ADDRESSES } from "@/contracts/config";
 import TEATokenABI from "@/contracts/TEAToken.json";
 import TEAStakingABI from "@/contracts/TEAStaking.json";
+
+// TEA Token uses 6 decimals
+const TEA_DECIMALS = 6;
 
 export const useStaking = () => {
   const { walletAddress, hasMetaMask } = useWallet();
@@ -63,8 +66,8 @@ export const useStaking = () => {
       // Fetch TEA balance separately to ensure it always works
       try {
         const balance = await tokenContract.balanceOf(walletAddress);
-        const formattedBalance = formatEther(balance);
-        console.log("[Staking] Raw TEA balance (wei):", balance.toString());
+        const formattedBalance = formatUnits(balance, TEA_DECIMALS);
+        console.log("[Staking] Raw TEA balance:", balance.toString());
         console.log("[Staking] Formatted TEA balance:", formattedBalance);
         setTeaBalance(formattedBalance);
       } catch (err) {
@@ -74,7 +77,7 @@ export const useStaking = () => {
       // Fetch allowance separately
       try {
         const userAllowance = await tokenContract.allowance(walletAddress, CONTRACT_ADDRESSES.TEA_STAKING);
-        setAllowance(formatEther(userAllowance));
+        setAllowance(formatUnits(userAllowance, TEA_DECIMALS));
       } catch (err) {
         console.error("[Staking] Error fetching allowance:", err);
       }
@@ -82,7 +85,7 @@ export const useStaking = () => {
       // Fetch staking data separately - these may fail if contract is not deployed or configured
       try {
         const staked = await stakingContract.balanceOf(walletAddress);
-        setStakedBalance(formatEther(staked));
+        setStakedBalance(formatUnits(staked, TEA_DECIMALS));
       } catch (err) {
         console.error("[Staking] Error fetching staked balance:", err);
         setStakedBalance("0");
@@ -90,7 +93,7 @@ export const useStaking = () => {
 
       try {
         const earned = await stakingContract.earned(walletAddress);
-        setEarnedRewards(formatEther(earned));
+        setEarnedRewards(formatUnits(earned, TEA_DECIMALS));
       } catch (err) {
         console.error("[Staking] Error fetching earned rewards:", err);
         setEarnedRewards("0");
@@ -98,7 +101,7 @@ export const useStaking = () => {
 
       try {
         const total = await stakingContract.totalSupply();
-        setTotalStaked(formatEther(total));
+        setTotalStaked(formatUnits(total, TEA_DECIMALS));
       } catch (err) {
         console.error("[Staking] Error fetching total supply:", err);
         setTotalStaked("0");
@@ -107,7 +110,7 @@ export const useStaking = () => {
       try {
         const rate = await stakingContract.rewardRate();
         const ratePerYear = BigInt(rate.toString()) * BigInt(365 * 24 * 60 * 60);
-        setRewardRate(formatEther(ratePerYear));
+        setRewardRate(formatUnits(ratePerYear, TEA_DECIMALS));
       } catch (err) {
         console.error("[Staking] Error fetching reward rate:", err);
         setRewardRate("0");
@@ -142,7 +145,7 @@ export const useStaking = () => {
       const tokenContract = await getTokenContract();
       if (!tokenContract) throw new Error("Failed to get contract");
 
-      const amountWei = parseEther(amount);
+      const amountWei = parseUnits(amount, TEA_DECIMALS);
       const tx = await tokenContract.approve(CONTRACT_ADDRESSES.TEA_STAKING, amountWei);
       
       toast({
@@ -187,7 +190,7 @@ export const useStaking = () => {
       const stakingContract = await getStakingContract();
       if (!stakingContract) throw new Error("Failed to get contract");
 
-      const amountWei = parseEther(amount);
+      const amountWei = parseUnits(amount, TEA_DECIMALS);
       const tx = await stakingContract.stake(amountWei);
       
       toast({
@@ -232,7 +235,7 @@ export const useStaking = () => {
       const stakingContract = await getStakingContract();
       if (!stakingContract) throw new Error("Failed to get contract");
 
-      const amountWei = parseEther(amount);
+      const amountWei = parseUnits(amount, TEA_DECIMALS);
       const tx = await stakingContract.withdraw(amountWei);
       
       toast({
