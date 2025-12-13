@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Book, Clock, ChevronDown, ChevronUp, CheckCircle, Circle, Loader2, HelpCircle, Award } from "lucide-react";
+import { Book, Clock, ChevronDown, ChevronUp, CheckCircle, Circle, Loader2, HelpCircle, Award, Lock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -299,14 +299,16 @@ export default function Courses() {
     );
   };
 
-  const handleSelectLesson = (lesson: Lesson) => {
+  const handleSelectLesson = (lesson: Lesson, moduleIndex: number) => {
+    if (!isModuleUnlocked(moduleIndex)) return;
     setSelectedLesson(lesson);
     setSelectedQuiz(null);
     setShowCertificate(false);
     updateLastAccessed(lesson.id);
   };
 
-  const handleSelectQuiz = (moduleId: string) => {
+  const handleSelectQuiz = (moduleId: string, moduleIndex: number) => {
+    if (!isModuleUnlocked(moduleIndex)) return;
     setSelectedQuiz(moduleId);
     setSelectedLesson(null);
     setShowCertificate(false);
@@ -320,6 +322,25 @@ export default function Courses() {
     const module = coursesData.modules.find((m) => m.id === moduleId);
     if (!module) return false;
     return module.lessons.every((lesson) => completedLessons.includes(lesson.id));
+  };
+
+  // Check if a module is unlocked (all previous modules must have completed lessons AND passed quiz)
+  const isModuleUnlocked = (moduleIndex: number) => {
+    if (moduleIndex === 0) return true; // First module is always unlocked
+    
+    // Check all previous modules
+    for (let i = 0; i < moduleIndex; i++) {
+      const prevModule = coursesData.modules[i];
+      const allLessonsComplete = prevModule.lessons.every((lesson) =>
+        completedLessons.includes(lesson.id)
+      );
+      const quizPassed = completedQuizzes.includes(prevModule.id);
+      
+      if (!allLessonsComplete || !quizPassed) {
+        return false;
+      }
+    }
+    return true;
   };
 
   const markAsCompleted = (lessonId: string) => {
@@ -377,87 +398,102 @@ export default function Courses() {
               Módulos do Curso
             </h2>
             
-            {coursesData.modules.map((module) => (
-              <Collapsible
-                key={module.id}
-                open={openModules.includes(module.id)}
-                onOpenChange={() => toggleModule(module.id)}
-              >
-                <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-                  <CollapsibleTrigger asChild>
-                    <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-crypto-purple/20">
-                            <Book className="h-5 w-5 text-crypto-purple" />
-                          </div>
-                          <div>
-                            <CardTitle className="text-base">
-                              {module.title}
-                            </CardTitle>
-                            <p className="text-sm text-muted-foreground">
-                              {module.lessons.length} aulas
-                            </p>
-                          </div>
-                        </div>
-                        {openModules.includes(module.id) ? (
-                          <ChevronUp className="h-5 w-5 text-muted-foreground" />
-                        ) : (
-                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                        )}
-                      </div>
-                    </CardHeader>
-                  </CollapsibleTrigger>
-                  
-                  <CollapsibleContent>
-                    <CardContent className="pt-0">
-                      <ul className="space-y-2">
-                        {module.lessons.map((lesson) => (
-                          <li key={lesson.id}>
-                            <button
-                              onClick={() => handleSelectLesson(lesson)}
-                              className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all ${
-                                selectedLesson?.id === lesson.id
-                                  ? "bg-crypto-purple/20 text-crypto-purple"
-                                  : "hover:bg-muted/50 text-foreground"
-                              }`}
-                            >
-                              {completedLessons.includes(lesson.id) ? (
-                                <CheckCircle className="h-4 w-4 text-crypto-green flex-shrink-0" />
+            {coursesData.modules.map((module, moduleIndex) => {
+              const isUnlocked = isModuleUnlocked(moduleIndex);
+              
+              return (
+                <Collapsible
+                  key={module.id}
+                  open={openModules.includes(module.id)}
+                  onOpenChange={() => isUnlocked && toggleModule(module.id)}
+                >
+                  <Card className={`border-border/50 bg-card/50 backdrop-blur-sm ${!isUnlocked ? 'opacity-60' : ''}`}>
+                    <CollapsibleTrigger asChild>
+                      <CardHeader className={`${isUnlocked ? 'cursor-pointer hover:bg-muted/50' : 'cursor-not-allowed'} transition-colors`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${isUnlocked ? 'bg-crypto-purple/20' : 'bg-muted'}`}>
+                              {isUnlocked ? (
+                                <Book className="h-5 w-5 text-crypto-purple" />
                               ) : (
-                                <Circle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <Lock className="h-5 w-5 text-muted-foreground" />
                               )}
-                              <span className="text-sm">{lesson.title}</span>
-                            </button>
-                          </li>
-                        ))}
-                        {/* Quiz item */}
-                        <li>
-                          <button
-                            onClick={() => handleSelectQuiz(module.id)}
-                            disabled={!isModuleComplete(module.id)}
-                            className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all ${
-                              selectedQuiz === module.id
-                                ? "bg-crypto-purple/20 text-crypto-purple"
-                                : !isModuleComplete(module.id)
-                                ? "opacity-50 cursor-not-allowed"
-                                : "hover:bg-muted/50 text-foreground"
-                            }`}
-                          >
-                            {completedQuizzes.includes(module.id) ? (
-                              <CheckCircle className="h-4 w-4 text-crypto-green flex-shrink-0" />
+                            </div>
+                            <div>
+                              <CardTitle className="text-base">
+                                {module.title}
+                              </CardTitle>
+                              <p className="text-sm text-muted-foreground">
+                                {isUnlocked ? `${module.lessons.length} aulas` : 'Complete o módulo anterior'}
+                              </p>
+                            </div>
+                          </div>
+                          {isUnlocked && (
+                            openModules.includes(module.id) ? (
+                              <ChevronUp className="h-5 w-5 text-muted-foreground" />
                             ) : (
-                              <HelpCircle className="h-4 w-4 text-crypto-blue flex-shrink-0" />
-                            )}
-                            <span className="text-sm">Quiz do Módulo</span>
-                          </button>
-                        </li>
-                      </ul>
-                    </CardContent>
-                  </CollapsibleContent>
-                </Card>
-              </Collapsible>
-            ))}
+                              <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                            )
+                          )}
+                          {!isUnlocked && (
+                            <Lock className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </div>
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    
+                    {isUnlocked && (
+                      <CollapsibleContent>
+                        <CardContent className="pt-0">
+                          <ul className="space-y-2">
+                            {module.lessons.map((lesson) => (
+                              <li key={lesson.id}>
+                                <button
+                                  onClick={() => handleSelectLesson(lesson, moduleIndex)}
+                                  className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all ${
+                                    selectedLesson?.id === lesson.id
+                                      ? "bg-crypto-purple/20 text-crypto-purple"
+                                      : "hover:bg-muted/50 text-foreground"
+                                  }`}
+                                >
+                                  {completedLessons.includes(lesson.id) ? (
+                                    <CheckCircle className="h-4 w-4 text-crypto-green flex-shrink-0" />
+                                  ) : (
+                                    <Circle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                  )}
+                                  <span className="text-sm">{lesson.title}</span>
+                                </button>
+                              </li>
+                            ))}
+                            {/* Quiz item */}
+                            <li>
+                              <button
+                                onClick={() => handleSelectQuiz(module.id, moduleIndex)}
+                                disabled={!isModuleComplete(module.id)}
+                                className={`w-full flex items-center gap-3 p-3 rounded-lg text-left transition-all ${
+                                  selectedQuiz === module.id
+                                    ? "bg-crypto-purple/20 text-crypto-purple"
+                                    : !isModuleComplete(module.id)
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : "hover:bg-muted/50 text-foreground"
+                                }`}
+                              >
+                                {completedQuizzes.includes(module.id) ? (
+                                  <CheckCircle className="h-4 w-4 text-crypto-green flex-shrink-0" />
+                                ) : (
+                                  <HelpCircle className="h-4 w-4 text-crypto-blue flex-shrink-0" />
+                                )}
+                                <span className="text-sm">Quiz do Módulo</span>
+                              </button>
+                            </li>
+                          </ul>
+                        </CardContent>
+                      </CollapsibleContent>
+                    )}
+                  </Card>
+                </Collapsible>
+              );
+            })}
 
             {/* Certificate Card */}
             {isCourseComplete && (
@@ -572,7 +608,7 @@ export default function Courses() {
                           return (
                             <Button
                               variant="outline"
-                              onClick={() => handleSelectQuiz(currentModule.id)}
+                              onClick={() => handleSelectQuiz(currentModule.id, currentModuleIndex)}
                             >
                               Fazer Quiz →
                             </Button>
@@ -581,20 +617,25 @@ export default function Courses() {
                         
                         // Try next lesson in current module
                         let nextLesson = currentModule.lessons[currentLessonIndex + 1];
-                        let nextModuleId = currentModule.id;
+                        let nextModuleIndex = currentModuleIndex;
                         
-                        // If no next lesson in current module, try first lesson of next module
+                        // If no next lesson in current module, try first lesson of next module (only if unlocked)
                         if (!nextLesson && currentModuleIndex < coursesData.modules.length - 1) {
                           const nextModule = coursesData.modules[currentModuleIndex + 1];
-                          nextLesson = nextModule.lessons[0];
-                          nextModuleId = nextModule.id;
+                          // Only show next module lesson if it will be unlocked
+                          if (isModuleUnlocked(currentModuleIndex + 1) || 
+                              (isModuleComplete(currentModule.id) && completedQuizzes.includes(currentModule.id))) {
+                            nextLesson = nextModule.lessons[0];
+                            nextModuleIndex = currentModuleIndex + 1;
+                          }
                         }
                         
                         return nextLesson ? (
                           <Button
                             variant="outline"
                             onClick={() => {
-                              handleSelectLesson(nextLesson);
+                              handleSelectLesson(nextLesson, nextModuleIndex);
+                              const nextModuleId = coursesData.modules[nextModuleIndex].id;
                               if (!openModules.includes(nextModuleId)) {
                                 setOpenModules((prev) => [...prev, nextModuleId]);
                               }
