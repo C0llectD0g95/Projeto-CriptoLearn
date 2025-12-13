@@ -96,6 +96,11 @@ const Staking = () => {
             <p className="text-muted-foreground">
               Faça stake dos seus tokens TEA e ganhe recompensas passivas.
             </p>
+            {walletAddress && (
+              <p className="text-xs text-muted-foreground mt-2 font-mono bg-muted/50 px-2 py-1 rounded inline-block">
+                Carteira: {walletAddress}
+              </p>
+            )}
           </div>
 
           {!walletAddress ? (
