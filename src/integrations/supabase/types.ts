@@ -76,6 +76,36 @@ export type Database = {
           },
         ]
       }
+      tea_rewards: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          reward_type: string
+          tx_hash: string | null
+          user_id: string
+          wallet_address: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          reward_type: string
+          tx_hash?: string | null
+          user_id: string
+          wallet_address: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          reward_type?: string
+          tx_hash?: string | null
+          user_id?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       user_progress: {
         Row: {
           completed: boolean
