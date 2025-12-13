@@ -34,8 +34,8 @@ const Header = () => {
           <span className="text-xl font-display font-bold">CryptoLearn</span>
         </Link>
 
-        <div className="flex items-center gap-3">
-        <Link to="/cursos">
+        <nav className="flex items-center gap-3 flex-shrink-0">
+          <Link to="/cursos">
             <Button variant="ghost" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
               Cursos
@@ -119,7 +119,7 @@ const Header = () => {
               <Button variant="outline">Entrar</Button>
             </Link>
           )}
-        </div>
+        </nav>
       </div>
     </header>
   );
