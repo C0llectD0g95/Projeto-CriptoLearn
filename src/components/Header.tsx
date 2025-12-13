@@ -32,8 +32,8 @@ const Header = () => {
         </Link>
 
         <div className="flex items-center gap-3">
-          <Link to="/cursos">
-            <Button variant="ghost" className="hidden sm:flex items-center gap-2">
+        <Link to="/cursos">
+            <Button variant="ghost" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
               Cursos
             </Button>
@@ -41,7 +41,7 @@ const Header = () => {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="hidden sm:flex items-center gap-2">
+              <Button variant="ghost" className="flex items-center gap-2">
                 <Leaf className="h-4 w-4" />
                 TEA
                 <ChevronDown className="h-3 w-3" />
