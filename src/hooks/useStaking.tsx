@@ -54,27 +54,57 @@ export const useStaking = () => {
       );
 
       console.log("[Staking] Fetching data for wallet:", walletAddress);
-      console.log("[Staking] TEA Token contract:", CONTRACT_ADDRESSES.TEA_TOKEN);
-      console.log("[Staking] Staking contract:", CONTRACT_ADDRESSES.TEA_STAKING);
 
-      const [balance, staked, earned, total, rate, userAllowance] = await Promise.all([
-        tokenContract.balanceOf(walletAddress),
-        stakingContract.balanceOf(walletAddress),
-        stakingContract.earned(walletAddress),
-        stakingContract.totalSupply(),
-        stakingContract.getRewardRatePerYear(),
-        tokenContract.allowance(walletAddress, CONTRACT_ADDRESSES.TEA_STAKING),
-      ]);
+      // Fetch TEA balance separately to ensure it always works
+      try {
+        const balance = await tokenContract.balanceOf(walletAddress);
+        console.log("[Staking] Raw TEA balance:", balance.toString());
+        setTeaBalance(formatEther(balance));
+      } catch (err) {
+        console.error("[Staking] Error fetching TEA balance:", err);
+      }
 
-      console.log("[Staking] Raw balance from contract:", balance.toString());
-      console.log("[Staking] Formatted TEA balance:", formatEther(balance));
+      // Fetch allowance separately
+      try {
+        const userAllowance = await tokenContract.allowance(walletAddress, CONTRACT_ADDRESSES.TEA_STAKING);
+        setAllowance(formatEther(userAllowance));
+      } catch (err) {
+        console.error("[Staking] Error fetching allowance:", err);
+      }
 
-      setTeaBalance(formatEther(balance));
-      setStakedBalance(formatEther(staked));
-      setEarnedRewards(formatEther(earned));
-      setTotalStaked(formatEther(total));
-      setRewardRate(formatEther(rate));
-      setAllowance(formatEther(userAllowance));
+      // Fetch staking data separately
+      try {
+        const staked = await stakingContract.balanceOf(walletAddress);
+        setStakedBalance(formatEther(staked));
+      } catch (err) {
+        console.error("[Staking] Error fetching staked balance:", err);
+      }
+
+      try {
+        const earned = await stakingContract.earned(walletAddress);
+        setEarnedRewards(formatEther(earned));
+      } catch (err) {
+        console.error("[Staking] Error fetching earned rewards:", err);
+      }
+
+      try {
+        const total = await stakingContract.totalSupply();
+        setTotalStaked(formatEther(total));
+      } catch (err) {
+        console.error("[Staking] Error fetching total supply:", err);
+      }
+
+      // Reward rate may fail if no rewards are configured yet
+      try {
+        const rate = await stakingContract.rewardRate();
+        // Convert per-second rate to per-year (rate * seconds in a year)
+        const ratePerYear = BigInt(rate.toString()) * BigInt(365 * 24 * 60 * 60);
+        setRewardRate(formatEther(ratePerYear));
+      } catch (err) {
+        console.error("[Staking] Error fetching reward rate:", err);
+        setRewardRate("0");
+      }
+
     } catch (error) {
       console.error("Error fetching staking data:", error);
     }
