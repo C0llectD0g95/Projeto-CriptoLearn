@@ -14,7 +14,9 @@ import {
   Wallet,
   Percent,
   TrendingUp,
-  RefreshCw
+  RefreshCw,
+  Clock,
+  Calendar
 } from "lucide-react";
 
 const Staking = () => {
@@ -26,6 +28,8 @@ const Staking = () => {
     totalStaked,
     rewardRate,
     allowance,
+    periodFinish,
+    apy,
     isLoading, 
     approve,
     stake, 
@@ -44,6 +48,26 @@ const Staking = () => {
     if (num === 0) return "0";
     if (num < 0.0001) return "< 0.0001";
     return num.toLocaleString("pt-BR", { maximumFractionDigits: decimals });
+  };
+
+  const formatDate = (timestamp: number) => {
+    if (!timestamp || timestamp <= Date.now()) return "Encerrado";
+    return new Date(timestamp).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  };
+
+  const getTimeRemaining = (timestamp: number) => {
+    if (!timestamp || timestamp <= Date.now()) return null;
+    const diff = timestamp - Date.now();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    if (days > 0) return `${days}d ${hours}h restantes`;
+    return `${hours}h restantes`;
   };
 
   const handleStake = async () => {
@@ -132,11 +156,14 @@ const Staking = () => {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Percent className="h-4 w-4" />
-                    Taxa de Recompensa Anual
+                    APY Estimado
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-2xl font-bold text-green-500">{formatNumber(rewardRate, 2)} TEA/ano</p>
+                  <p className="text-2xl font-bold text-green-500">{apy}%</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatNumber(rewardRate, 2)} TEA/ano total
+                  </p>
                 </CardContent>
               </Card>
 
@@ -160,6 +187,38 @@ const Staking = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-2xl font-bold text-primary">{formatNumber(stakedBalance)} TEA</p>
+                </CardContent>
+              </Card>
+
+              {/* Period Info Card */}
+              <Card className="border-border/50 bg-card/50 backdrop-blur-sm md:col-span-2">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Período de Recompensas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-lg font-semibold">
+                        {periodFinish > Date.now() ? "Ativo" : "Encerrado"}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {periodFinish > 0 ? (
+                          <>Termina em: {formatDate(periodFinish)}</>
+                        ) : (
+                          "Nenhum período ativo"
+                        )}
+                      </p>
+                    </div>
+                    {getTimeRemaining(periodFinish) && (
+                      <div className="flex items-center gap-2 text-primary">
+                        <Clock className="h-4 w-4" />
+                        <span className="text-sm font-medium">{getTimeRemaining(periodFinish)}</span>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
 

@@ -1,10 +1,13 @@
 import { useState, useCallback, useEffect } from "react";
-import { BrowserProvider, Contract, formatEther, parseEther } from "ethers";
+import { BrowserProvider, Contract, formatUnits, parseUnits } from "ethers";
 import { useWallet } from "./useWallet";
 import { toast } from "@/hooks/use-toast";
 import { CONTRACT_ADDRESSES, NETWORK_CONFIG } from "@/contracts/config";
 import TEATokenABI from "@/contracts/TEAToken.json";
 import TEAGovernorABI from "@/contracts/TEAGovernor.json";
+
+// TEA Token uses 6 decimals
+const TEA_DECIMALS = 6;
 
 export interface ProposalInfo {
   id: string;
@@ -59,7 +62,7 @@ export const useGovernance = () => {
         provider
       );
       const votes = await tokenContract.getVotes(walletAddress);
-      setVotingPower(formatEther(votes));
+      setVotingPower(formatUnits(votes, TEA_DECIMALS));
     } catch (error) {
       console.error("Error fetching voting power:", error);
     }
@@ -93,7 +96,7 @@ export const useGovernance = () => {
         provider
       );
       const balance = await tokenContract.balanceOf(walletAddress);
-      setTeaBalance(formatEther(balance));
+      setTeaBalance(formatUnits(balance, TEA_DECIMALS));
     } catch (error) {
       console.error("Error fetching TEA balance:", error);
     }
@@ -109,7 +112,7 @@ export const useGovernance = () => {
         provider
       );
       const threshold = await governorContract.proposalThreshold();
-      setProposalThreshold(formatEther(threshold));
+      setProposalThreshold(formatUnits(threshold, TEA_DECIMALS));
     } catch (error) {
       console.error("Error fetching proposal threshold:", error);
     }
@@ -158,9 +161,9 @@ export const useGovernance = () => {
             proposer: proposer,
             title: title || `Proposta #${proposalId.slice(0, 8)}...`,
             description: description,
-            forVotes: formatEther(votes.forVotes || votes[1] || 0n),
-            againstVotes: formatEther(votes.againstVotes || votes[0] || 0n),
-            abstainVotes: formatEther(votes.abstainVotes || votes[2] || 0n),
+            forVotes: formatUnits(votes.forVotes || votes[1] || 0n, TEA_DECIMALS),
+            againstVotes: formatUnits(votes.againstVotes || votes[0] || 0n, TEA_DECIMALS),
+            abstainVotes: formatUnits(votes.abstainVotes || votes[2] || 0n, TEA_DECIMALS),
             state: Number(state),
             voteStart: Number(voteStart) * 1000,
             voteEnd: Number(voteEnd) * 1000,

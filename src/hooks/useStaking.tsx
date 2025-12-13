@@ -17,6 +17,9 @@ export const useStaking = () => {
   const [totalStaked, setTotalStaked] = useState<string>("0");
   const [rewardRate, setRewardRate] = useState<string>("0");
   const [allowance, setAllowance] = useState<string>("0");
+  const [periodFinish, setPeriodFinish] = useState<number>(0);
+  const [rewardsDuration, setRewardsDuration] = useState<number>(0);
+  const [apy, setApy] = useState<string>("0");
   const [isLoading, setIsLoading] = useState(false);
 
   const getProvider = useCallback(() => {
@@ -100,13 +103,50 @@ export const useStaking = () => {
         setTotalStaked("0");
       }
 
+      // Fetch reward rate and calculate APY
+      let ratePerSecond = 0n;
       try {
         const rate = await stakingContract.rewardRate();
-        const ratePerYear = BigInt(rate.toString()) * BigInt(365 * 24 * 60 * 60);
+        ratePerSecond = BigInt(rate.toString());
+        const ratePerYear = ratePerSecond * BigInt(365 * 24 * 60 * 60);
         setRewardRate(formatUnits(ratePerYear, TEA_DECIMALS));
       } catch (err) {
         console.error("[Staking] Error fetching reward rate:", err);
         setRewardRate("0");
+      }
+
+      // Fetch period finish (when rewards end)
+      try {
+        const finish = await stakingContract.periodFinish();
+        setPeriodFinish(Number(finish) * 1000); // Convert to milliseconds
+      } catch (err) {
+        console.error("[Staking] Error fetching period finish:", err);
+        setPeriodFinish(0);
+      }
+
+      // Fetch rewards duration
+      try {
+        const duration = await stakingContract.rewardsDuration();
+        setRewardsDuration(Number(duration));
+      } catch (err) {
+        console.error("[Staking] Error fetching rewards duration:", err);
+        setRewardsDuration(0);
+      }
+
+      // Calculate APY: (rewardRate * secondsPerYear / totalStaked) * 100
+      try {
+        const total = await stakingContract.totalSupply();
+        const totalNum = parseFloat(formatUnits(total, TEA_DECIMALS));
+        if (totalNum > 0 && ratePerSecond > 0n) {
+          const yearlyRewards = parseFloat(formatUnits(ratePerSecond * BigInt(365 * 24 * 60 * 60), TEA_DECIMALS));
+          const apyValue = (yearlyRewards / totalNum) * 100;
+          setApy(apyValue.toFixed(2));
+        } else {
+          setApy("0");
+        }
+      } catch (err) {
+        console.error("[Staking] Error calculating APY:", err);
+        setApy("0");
       }
 
     } catch (error) {
@@ -353,6 +393,9 @@ export const useStaking = () => {
     totalStaked,
     rewardRate,
     allowance,
+    periodFinish,
+    rewardsDuration,
+    apy,
     isLoading,
     approve,
     stake,
