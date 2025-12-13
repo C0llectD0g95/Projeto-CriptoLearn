@@ -9,6 +9,7 @@ import { useCourseProgress } from "@/hooks/useCourseProgress";
 import ModuleQuiz from "@/components/ModuleQuiz";
 import { quizzes } from "@/data/quizzes";
 import CourseCertificate from "@/components/CourseCertificate";
+import { toast } from "@/hooks/use-toast";
 interface Lesson {
   id: string;
   title: string;
@@ -405,11 +406,39 @@ export default function Courses() {
                 <Collapsible
                   key={module.id}
                   open={openModules.includes(module.id)}
-                  onOpenChange={() => isUnlocked && toggleModule(module.id)}
+                  onOpenChange={() => {
+                    if (isUnlocked) {
+                      toggleModule(module.id);
+                    } else {
+                      // Find the first incomplete previous module
+                      const prevModuleIndex = moduleIndex - 1;
+                      const prevModule = coursesData.modules[prevModuleIndex];
+                      const allLessonsComplete = prevModule.lessons.every((lesson) =>
+                        completedLessons.includes(lesson.id)
+                      );
+                      const quizPassed = completedQuizzes.includes(prevModule.id);
+                      
+                      let message = "";
+                      if (!allLessonsComplete) {
+                        const remainingLessons = prevModule.lessons.filter(
+                          (lesson) => !completedLessons.includes(lesson.id)
+                        ).length;
+                        message = `Complete todas as ${remainingLessons} aulas restantes do "${prevModule.title}" primeiro.`;
+                      } else if (!quizPassed) {
+                        message = `Passe no quiz do "${prevModule.title}" com pelo menos 70% para desbloquear este módulo.`;
+                      }
+                      
+                      toast({
+                        title: "Módulo bloqueado",
+                        description: message,
+                        variant: "destructive",
+                      });
+                    }
+                  }}
                 >
                   <Card className={`border-border/50 bg-card/50 backdrop-blur-sm ${!isUnlocked ? 'opacity-60' : ''}`}>
                     <CollapsibleTrigger asChild>
-                      <CardHeader className={`${isUnlocked ? 'cursor-pointer hover:bg-muted/50' : 'cursor-not-allowed'} transition-colors`}>
+                      <CardHeader className={`${isUnlocked ? 'cursor-pointer hover:bg-muted/50' : 'cursor-pointer'} transition-colors`}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className={`p-2 rounded-lg ${isUnlocked ? 'bg-crypto-purple/20' : 'bg-muted'}`}>
