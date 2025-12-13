@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useGovernance, PROPOSAL_STATES } from "@/hooks/useGovernance";
 import { useWallet } from "@/hooks/useWallet";
+import CreateProposalModal from "@/components/CreateProposalModal";
 import { 
   FileText, 
   ArrowLeft, 
@@ -17,14 +18,27 @@ import {
   Check,
   AlertCircle,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
+  Plus
 } from "lucide-react";
 
 const Proposals = () => {
   const { walletAddress, isCorrectNetwork, switchToAmoy } = useWallet();
-  const { isVotingActive, votingPower, castVote, isLoading, hasVoted, proposals, isLoadingProposals, fetchProposals } = useGovernance();
+  const { 
+    isVotingActive, 
+    votingPower, 
+    proposalThreshold,
+    castVote, 
+    createProposal,
+    isLoading, 
+    hasVoted, 
+    proposals, 
+    isLoadingProposals, 
+    fetchProposals 
+  } = useGovernance();
   const [votedProposals, setVotedProposals] = useState<Record<string, boolean>>({});
   const [votingProposalId, setVotingProposalId] = useState<string | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Check which proposals user has already voted on
   useEffect(() => {
@@ -99,15 +113,23 @@ const Proposals = () => {
                 </p>
               </div>
               {walletAddress && isCorrectNetwork && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={fetchProposals}
-                  disabled={isLoadingProposals}
-                >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingProposals ? 'animate-spin' : ''}`} />
-                  Atualizar
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    disabled={isLoading}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nova Proposta
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={fetchProposals}
+                    disabled={isLoadingProposals}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isLoadingProposals ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -339,6 +361,15 @@ const Proposals = () => {
           )}
         </div>
       </main>
+
+      <CreateProposalModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        onSubmit={createProposal}
+        isLoading={isLoading}
+        votingPower={votingPower}
+        proposalThreshold={proposalThreshold}
+      />
     </div>
   );
 };
