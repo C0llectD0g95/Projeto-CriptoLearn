@@ -2,13 +2,14 @@ import { useState, useCallback, useEffect } from "react";
 import { BrowserProvider, Contract, formatEther, parseEther } from "ethers";
 import { useWallet } from "./useWallet";
 import { toast } from "@/hooks/use-toast";
-import { CONTRACT_ADDRESSES } from "@/contracts/config";
+import { CONTRACT_ADDRESSES, NETWORK_CONFIG } from "@/contracts/config";
 import TEATokenABI from "@/contracts/TEAToken.json";
 import TEAGovernorABI from "@/contracts/TEAGovernor.json";
 
-interface ProposalInfo {
+export interface ProposalInfo {
   id: string;
   proposer: string;
+  title: string;
   description: string;
   forVotes: string;
   againstVotes: string;
@@ -19,11 +20,13 @@ interface ProposalInfo {
 }
 
 export const useGovernance = () => {
-  const { walletAddress, hasMetaMask } = useWallet();
+  const { walletAddress, hasMetaMask, isCorrectNetwork } = useWallet();
   const [votingPower, setVotingPower] = useState<string>("0");
   const [delegatee, setDelegatee] = useState<string | null>(null);
   const [teaBalance, setTeaBalance] = useState<string>("0");
+  const [proposals, setProposals] = useState<ProposalInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProposals, setIsLoadingProposals] = useState(false);
 
   const getProvider = useCallback(() => {
     if (!window.ethereum) return null;
@@ -95,13 +98,84 @@ export const useGovernance = () => {
     }
   }, [walletAddress, getProvider]);
 
+  const fetchProposals = useCallback(async () => {
+    if (!isCorrectNetwork) return;
+    
+    setIsLoadingProposals(true);
+    try {
+      const provider = getProvider();
+      if (!provider) return;
+
+      const governorContract = new Contract(
+        CONTRACT_ADDRESSES.TEA_GOVERNOR,
+        TEAGovernorABI,
+        provider
+      );
+
+      // Get ProposalCreated events
+      const filter = governorContract.filters.ProposalCreated();
+      const events = await governorContract.queryFilter(filter, 0, "latest");
+
+      const proposalPromises = events.map(async (event: any) => {
+        const proposalId = event.args.proposalId.toString();
+        const proposer = event.args.proposer;
+        const description = event.args.description || "";
+
+        try {
+          // Get proposal state
+          const state = await governorContract.state(proposalId);
+          
+          // Get vote counts
+          const votes = await governorContract.proposalVotes(proposalId);
+          
+          // Get vote deadlines
+          const voteStart = await governorContract.proposalSnapshot(proposalId);
+          const voteEnd = await governorContract.proposalDeadline(proposalId);
+
+          // Parse title from description (first line or first 50 chars)
+          const lines = description.split('\n');
+          const title = lines[0].length > 60 ? lines[0].substring(0, 60) + '...' : lines[0];
+
+          return {
+            id: proposalId,
+            proposer: proposer,
+            title: title || `Proposta #${proposalId.slice(0, 8)}...`,
+            description: description,
+            forVotes: formatEther(votes.forVotes || votes[1] || 0n),
+            againstVotes: formatEther(votes.againstVotes || votes[0] || 0n),
+            abstainVotes: formatEther(votes.abstainVotes || votes[2] || 0n),
+            state: Number(state),
+            voteStart: Number(voteStart) * 1000,
+            voteEnd: Number(voteEnd) * 1000,
+          };
+        } catch (error) {
+          console.error(`Error fetching proposal ${proposalId}:`, error);
+          return null;
+        }
+      });
+
+      const fetchedProposals = (await Promise.all(proposalPromises)).filter(
+        (p): p is ProposalInfo => p !== null
+      );
+
+      // Sort by most recent first
+      fetchedProposals.sort((a, b) => b.voteEnd - a.voteEnd);
+      setProposals(fetchedProposals);
+    } catch (error) {
+      console.error("Error fetching proposals:", error);
+    } finally {
+      setIsLoadingProposals(false);
+    }
+  }, [getProvider, isCorrectNetwork]);
+
   useEffect(() => {
-    if (walletAddress) {
+    if (walletAddress && isCorrectNetwork) {
       fetchVotingPower();
       fetchDelegatee();
       fetchTeaBalance();
+      fetchProposals();
     }
-  }, [walletAddress, fetchVotingPower, fetchDelegatee, fetchTeaBalance]);
+  }, [walletAddress, isCorrectNetwork, fetchVotingPower, fetchDelegatee, fetchTeaBalance, fetchProposals]);
 
   const activateVoting = useCallback(async () => {
     if (!walletAddress || !hasMetaMask) {
@@ -176,6 +250,7 @@ export const useGovernance = () => {
         description: `Seu voto ${voteType} foi registrado com sucesso.`,
       });
 
+      await fetchProposals();
       return true;
     } catch (error: any) {
       console.error("Error casting vote:", error);
@@ -188,7 +263,7 @@ export const useGovernance = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [walletAddress, hasMetaMask, getGovernorContract]);
+  }, [walletAddress, hasMetaMask, getGovernorContract, fetchProposals]);
 
   const getProposalState = useCallback(async (proposalId: string): Promise<number | null> => {
     try {
@@ -228,11 +303,14 @@ export const useGovernance = () => {
     votingPower,
     delegatee,
     teaBalance,
+    proposals,
     isLoading,
+    isLoadingProposals,
     activateVoting,
     castVote,
     getProposalState,
     hasVoted,
+    fetchProposals,
     isVotingActive: delegatee?.toLowerCase() === walletAddress?.toLowerCase(),
   };
 };
