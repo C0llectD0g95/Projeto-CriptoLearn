@@ -25,6 +25,7 @@ export const useGovernance = () => {
   const [delegatee, setDelegatee] = useState<string | null>(null);
   const [teaBalance, setTeaBalance] = useState<string>("0");
   const [proposals, setProposals] = useState<ProposalInfo[]>([]);
+  const [proposalThreshold, setProposalThreshold] = useState<string>("0");
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProposals, setIsLoadingProposals] = useState(false);
 
@@ -97,6 +98,22 @@ export const useGovernance = () => {
       console.error("Error fetching TEA balance:", error);
     }
   }, [walletAddress, getProvider]);
+
+  const fetchProposalThreshold = useCallback(async () => {
+    try {
+      const provider = getProvider();
+      if (!provider) return;
+      const governorContract = new Contract(
+        CONTRACT_ADDRESSES.TEA_GOVERNOR,
+        TEAGovernorABI,
+        provider
+      );
+      const threshold = await governorContract.proposalThreshold();
+      setProposalThreshold(formatEther(threshold));
+    } catch (error) {
+      console.error("Error fetching proposal threshold:", error);
+    }
+  }, [getProvider]);
 
   const fetchProposals = useCallback(async () => {
     if (!isCorrectNetwork) return;
@@ -174,8 +191,9 @@ export const useGovernance = () => {
       fetchDelegatee();
       fetchTeaBalance();
       fetchProposals();
+      fetchProposalThreshold();
     }
-  }, [walletAddress, isCorrectNetwork, fetchVotingPower, fetchDelegatee, fetchTeaBalance, fetchProposals]);
+  }, [walletAddress, isCorrectNetwork, fetchVotingPower, fetchDelegatee, fetchTeaBalance, fetchProposals, fetchProposalThreshold]);
 
   const activateVoting = useCallback(async () => {
     if (!walletAddress || !hasMetaMask) {
@@ -220,6 +238,71 @@ export const useGovernance = () => {
       setIsLoading(false);
     }
   }, [walletAddress, hasMetaMask, getTokenContract, fetchVotingPower, fetchDelegatee]);
+
+  const createProposal = useCallback(async (title: string, description: string) => {
+    if (!walletAddress || !hasMetaMask) {
+      toast({
+        title: "Carteira não conectada",
+        description: "Conecte sua carteira MetaMask para criar uma proposta.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Check if user has enough voting power
+    const votingPowerNum = parseFloat(votingPower);
+    const thresholdNum = parseFloat(proposalThreshold);
+    if (votingPowerNum < thresholdNum) {
+      toast({
+        title: "Poder de voto insuficiente",
+        description: `Você precisa de pelo menos ${proposalThreshold} TEA em poder de voto para criar uma proposta.`,
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    setIsLoading(true);
+    try {
+      const governorContract = await getGovernorContract();
+      if (!governorContract) throw new Error("Failed to get contract");
+
+      // For a simple proposal without execution, we use empty arrays for targets, values, and calldatas
+      // The description contains the title and body
+      const fullDescription = `${title}\n\n${description}`;
+      
+      const tx = await governorContract.propose(
+        [], // targets
+        [], // values
+        [], // calldatas
+        fullDescription
+      );
+
+      toast({
+        title: "Proposta enviada",
+        description: "Aguardando confirmação na blockchain...",
+      });
+
+      await tx.wait();
+      
+      toast({
+        title: "Proposta criada!",
+        description: "Sua proposta foi registrada na blockchain.",
+      });
+
+      await fetchProposals();
+      return true;
+    } catch (error: any) {
+      console.error("Error creating proposal:", error);
+      toast({
+        title: "Erro ao criar proposta",
+        description: error.reason || error.message || "Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [walletAddress, hasMetaMask, getGovernorContract, fetchProposals, votingPower, proposalThreshold]);
 
   const castVote = useCallback(async (proposalId: string, support: number) => {
     if (!walletAddress || !hasMetaMask) {
@@ -304,9 +387,11 @@ export const useGovernance = () => {
     delegatee,
     teaBalance,
     proposals,
+    proposalThreshold,
     isLoading,
     isLoadingProposals,
     activateVoting,
+    createProposal,
     castVote,
     getProposalState,
     hasVoted,
