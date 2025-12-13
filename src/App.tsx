@@ -11,6 +11,9 @@ import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import Courses from "./pages/Courses";
 import Litepaper from "./pages/Litepaper";
+import Governance from "./pages/Governance";
+import Proposals from "./pages/Proposals";
+import Staking from "./pages/Staking";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +33,9 @@ const App = () => (
                 <Route path="/perfil" element={<Profile />} />
                 <Route path="/cursos" element={<Courses />} />
                 <Route path="/litepaper" element={<Litepaper />} />
+                <Route path="/governanca" element={<Governance />} />
+                <Route path="/propostas" element={<Proposals />} />
+                <Route path="/staking" element={<Staking />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

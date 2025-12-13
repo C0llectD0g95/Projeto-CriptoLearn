@@ -8,11 +8,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import WalletButton from "./WalletButton";
 import { ThemeToggle } from "./ThemeToggle";
-import { LogOut, User, Settings, BookOpen, ChevronDown, Leaf, FileText } from "lucide-react";
+import { LogOut, User, Settings, BookOpen, ChevronDown, Leaf, FileText, Vote, Coins } from "lucide-react";
 
 const Header = () => {
   const { user, signOut, loading } = useAuth();
@@ -52,6 +55,19 @@ const Header = () => {
                 <Link to="/litepaper" className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Litepaper
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link to="/governanca" className="flex items-center gap-2">
+                  <Vote className="h-4 w-4" />
+                  Governança
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/staking" className="flex items-center gap-2">
+                  <Coins className="h-4 w-4" />
+                  Staking de TEA
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
