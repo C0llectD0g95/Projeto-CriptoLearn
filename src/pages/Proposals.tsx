@@ -15,54 +15,30 @@ import {
   Loader2, 
   Wallet,
   Check,
-  AlertCircle
+  AlertCircle,
+  RefreshCw,
+  AlertTriangle
 } from "lucide-react";
 
-// Example proposals - In production, these would come from blockchain events
-const EXAMPLE_PROPOSALS = [
-  {
-    id: "1",
-    title: "Proposta #1 - Aumentar Recompensas de Staking",
-    description: "Proposta para aumentar as recompensas de staking de 5% para 8% ao ano para incentivar mais participação na rede.",
-    proposer: "0x1234...5678",
-    forVotes: "150000",
-    againstVotes: "45000",
-    abstainVotes: "5000",
-    state: 1,
-    voteStart: Date.now() - 86400000,
-    voteEnd: Date.now() + 86400000 * 6,
-  },
-  {
-    id: "2",
-    title: "Proposta #2 - Novo Sistema de Governança",
-    description: "Implementação de um novo sistema de governança com votação quadrática para dar mais poder aos pequenos holders.",
-    proposer: "0xabcd...efgh",
-    forVotes: "200000",
-    againstVotes: "180000",
-    abstainVotes: "20000",
-    state: 1,
-    voteStart: Date.now() - 172800000,
-    voteEnd: Date.now() + 86400000 * 3,
-  },
-  {
-    id: "3",
-    title: "Proposta #3 - Parceria com Protocolo DeFi",
-    description: "Aprovar parceria estratégica com protocolo DeFi para integração de lending e borrowing com TEA.",
-    proposer: "0x9876...5432",
-    forVotes: "300000",
-    againstVotes: "50000",
-    abstainVotes: "10000",
-    state: 4,
-    voteStart: Date.now() - 604800000,
-    voteEnd: Date.now() - 86400000,
-  },
-];
-
 const Proposals = () => {
-  const { walletAddress } = useWallet();
-  const { isVotingActive, votingPower, castVote, isLoading, hasVoted } = useGovernance();
+  const { walletAddress, isCorrectNetwork, switchToAmoy } = useWallet();
+  const { isVotingActive, votingPower, castVote, isLoading, hasVoted, proposals, isLoadingProposals, fetchProposals } = useGovernance();
   const [votedProposals, setVotedProposals] = useState<Record<string, boolean>>({});
   const [votingProposalId, setVotingProposalId] = useState<string | null>(null);
+
+  // Check which proposals user has already voted on
+  useEffect(() => {
+    const checkVotedProposals = async () => {
+      const voted: Record<string, boolean> = {};
+      for (const proposal of proposals) {
+        voted[proposal.id] = await hasVoted(proposal.id);
+      }
+      setVotedProposals(voted);
+    };
+    if (proposals.length > 0 && walletAddress) {
+      checkVotedProposals();
+    }
+  }, [proposals, walletAddress, hasVoted]);
 
   const formatNumber = (value: string) => {
     const num = parseFloat(value);
@@ -92,15 +68,8 @@ const Proposals = () => {
     setVotingProposalId(null);
   };
 
-  const getRemainingTime = (endTime: number) => {
-    const remaining = endTime - Date.now();
-    if (remaining <= 0) return "Encerrada";
-    
-    const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    
-    if (days > 0) return `${days}d ${hours}h restantes`;
-    return `${hours}h restantes`;
+  const formatAddress = (address: string) => {
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
   return (
@@ -119,13 +88,28 @@ const Proposals = () => {
               Voltar para Governança
             </Link>
             
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="h-6 w-6 text-primary" />
-              <h1 className="text-3xl font-display font-bold">Propostas</h1>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="h-6 w-6 text-primary" />
+                  <h1 className="text-3xl font-display font-bold">Propostas</h1>
+                </div>
+                <p className="text-muted-foreground">
+                  Vote nas propostas ativas para participar das decisões do protocolo.
+                </p>
+              </div>
+              {walletAddress && isCorrectNetwork && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchProposals}
+                  disabled={isLoadingProposals}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingProposals ? 'animate-spin' : ''}`} />
+                  Atualizar
+                </Button>
+              )}
             </div>
-            <p className="text-muted-foreground">
-              Vote nas propostas ativas para participar das decisões do protocolo.
-            </p>
           </div>
 
           {!walletAddress ? (
@@ -136,6 +120,19 @@ const Proposals = () => {
                 <p className="text-muted-foreground text-center max-w-md">
                   Conecte sua carteira MetaMask para ver e votar nas propostas.
                 </p>
+              </CardContent>
+            </Card>
+          ) : !isCorrectNetwork ? (
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <AlertTriangle className="h-16 w-16 text-yellow-500 mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Rede Incorreta</h3>
+                <p className="text-muted-foreground text-center max-w-md mb-4">
+                  Você precisa estar conectado à rede Polygon Amoy para ver as propostas.
+                </p>
+                <Button onClick={switchToAmoy}>
+                  Trocar para Polygon Amoy
+                </Button>
               </CardContent>
             </Card>
           ) : !isVotingActive ? (
@@ -169,8 +166,31 @@ const Proposals = () => {
                 </CardContent>
               </Card>
 
+              {/* Loading State */}
+              {isLoadingProposals && (
+                <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+                    <p className="text-muted-foreground">Buscando propostas da blockchain...</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Empty State */}
+              {!isLoadingProposals && proposals.length === 0 && (
+                <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <FileText className="h-16 w-16 text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">Nenhuma Proposta</h3>
+                    <p className="text-muted-foreground text-center max-w-md">
+                      Não há propostas registradas na blockchain no momento.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Proposals List */}
-              {EXAMPLE_PROPOSALS.map((proposal) => {
+              {!isLoadingProposals && proposals.map((proposal) => {
                 const stateInfo = getStateInfo(proposal.state);
                 const totalVotes = (parseFloat(proposal.forVotes) + parseFloat(proposal.againstVotes) + parseFloat(proposal.abstainVotes)).toString();
                 const isActive = proposal.state === 1;
@@ -183,7 +203,9 @@ const Proposals = () => {
                         <div>
                           <CardTitle className="text-lg">{proposal.title}</CardTitle>
                           <CardDescription className="mt-2">
-                            {proposal.description}
+                            {proposal.description.length > 200 
+                              ? proposal.description.substring(0, 200) + '...' 
+                              : proposal.description}
                           </CardDescription>
                         </div>
                         <Badge 
@@ -247,8 +269,8 @@ const Proposals = () => {
 
                         {/* Meta Info */}
                         <div className="flex items-center justify-between text-sm text-muted-foreground pt-2 border-t border-border/50">
-                          <span>Propositor: {proposal.proposer}</span>
-                          <span>{getRemainingTime(proposal.voteEnd)}</span>
+                          <span>Propositor: {formatAddress(proposal.proposer)}</span>
+                          <span>ID: {proposal.id.slice(0, 12)}...</span>
                         </div>
 
                         {/* Voting Buttons */}
