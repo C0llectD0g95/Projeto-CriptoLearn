@@ -11,6 +11,48 @@ const TEA_DECIMALS = 6;
 const REWARD_AMOUNT = 100; // 100 TEA tokens
 const MODULE_3_QUIZ_ID = "module-3";
 
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
+const MAX_REQUESTS_PER_WINDOW = 5; // Max 5 requests per minute per user/IP
+
+// In-memory rate limit store (resets on function cold start, but that's acceptable)
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
+function isRateLimited(identifier: string): { limited: boolean; retryAfter?: number } {
+  const now = Date.now();
+  const entry = rateLimitStore.get(identifier);
+  
+  if (!entry || now > entry.resetTime) {
+    // No entry or expired, create new one
+    rateLimitStore.set(identifier, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return { limited: false };
+  }
+  
+  if (entry.count >= MAX_REQUESTS_PER_WINDOW) {
+    const retryAfter = Math.ceil((entry.resetTime - now) / 1000);
+    return { limited: true, retryAfter };
+  }
+  
+  // Increment count
+  entry.count++;
+  return { limited: false };
+}
+
+function getClientIdentifier(req: Request, userId?: string): string {
+  // Prefer user ID for authenticated requests, fallback to IP
+  if (userId) {
+    return `user:${userId}`;
+  }
+  
+  // Try to get client IP from various headers
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  const realIp = req.headers.get('x-real-ip');
+  const cfConnectingIp = req.headers.get('cf-connecting-ip');
+  
+  const ip = cfConnectingIp || realIp || forwardedFor?.split(',')[0]?.trim() || 'unknown';
+  return `ip:${ip}`;
+}
+
 // Minimal ERC20 ABI for transfer
 const ERC20_ABI = [
   "function transfer(address to, uint256 amount) returns (bool)",
@@ -46,6 +88,28 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       throw new Error('User not authenticated');
+    }
+
+    // Apply rate limiting based on user ID
+    const clientId = getClientIdentifier(req, user.id);
+    const rateLimitResult = isRateLimited(clientId);
+    
+    if (rateLimitResult.limited) {
+      console.log(`Rate limit exceeded for ${clientId}`);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Too many requests. Please try again in ${rateLimitResult.retryAfter} seconds.` 
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json',
+            'Retry-After': String(rateLimitResult.retryAfter)
+          }, 
+          status: 429 
+        }
+      );
     }
 
     console.log(`Processing TEA reward claim for user: ${user.id}`);
