@@ -82,21 +82,24 @@ serve(async (req) => {
       );
     }
 
-    // Get user's wallet address with connected_at date
-    const { data: wallet, error: walletError } = await supabase
+    // Get user's wallet address with connected_at date (prefer primary, fallback to any)
+    const { data: wallets, error: walletError } = await supabase
       .from('wallets')
-      .select('wallet_address, connected_at')
+      .select('wallet_address, connected_at, is_primary')
       .eq('user_id', user.id)
-      .eq('is_primary', true)
-      .maybeSingle();
+      .order('is_primary', { ascending: false })
+      .order('connected_at', { ascending: true });
 
-    if (walletError || !wallet) {
-      console.log(`User ${user.id} has no primary wallet connected`);
+    if (walletError || !wallets || wallets.length === 0) {
+      console.log(`User ${user.id} has no wallet connected`);
       return new Response(
         JSON.stringify({ success: false, error: 'No wallet connected. Please connect your wallet first.' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
+
+    // Use the first wallet (primary if exists, or oldest connected)
+    const wallet = wallets[0];
 
     // Check if wallet is at least 7 days old
     const walletCreatedAt = new Date(wallet.connected_at);
