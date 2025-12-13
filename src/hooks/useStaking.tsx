@@ -47,7 +47,6 @@ export const useStaking = () => {
 
       // Check network
       const network = await provider.getNetwork();
-      console.log("[Staking] Current network chainId:", network.chainId.toString());
 
       const tokenContract = new Contract(
         CONTRACT_ADDRESSES.TEA_TOKEN,
@@ -60,16 +59,10 @@ export const useStaking = () => {
         provider
       );
 
-      console.log("[Staking] Fetching data for wallet:", walletAddress);
-      console.log("[Staking] TEA Token address:", CONTRACT_ADDRESSES.TEA_TOKEN);
-
-      // Fetch TEA balance separately to ensure it always works
+      // Fetch TEA balance
       try {
         const balance = await tokenContract.balanceOf(walletAddress);
-        const formattedBalance = formatUnits(balance, TEA_DECIMALS);
-        console.log("[Staking] Raw TEA balance:", balance.toString());
-        console.log("[Staking] Formatted TEA balance:", formattedBalance);
-        setTeaBalance(formattedBalance);
+        setTeaBalance(formatUnits(balance, TEA_DECIMALS));
       } catch (err) {
         console.error("[Staking] Error fetching TEA balance:", err);
       }
