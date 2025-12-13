@@ -42,6 +42,10 @@ export const useStaking = () => {
       const provider = getProvider();
       if (!provider) return;
 
+      // Check network
+      const network = await provider.getNetwork();
+      console.log("[Staking] Current network chainId:", network.chainId.toString());
+
       const tokenContract = new Contract(
         CONTRACT_ADDRESSES.TEA_TOKEN,
         TEATokenABI,
@@ -54,12 +58,15 @@ export const useStaking = () => {
       );
 
       console.log("[Staking] Fetching data for wallet:", walletAddress);
+      console.log("[Staking] TEA Token address:", CONTRACT_ADDRESSES.TEA_TOKEN);
 
       // Fetch TEA balance separately to ensure it always works
       try {
         const balance = await tokenContract.balanceOf(walletAddress);
-        console.log("[Staking] Raw TEA balance:", balance.toString());
-        setTeaBalance(formatEther(balance));
+        const formattedBalance = formatEther(balance);
+        console.log("[Staking] Raw TEA balance (wei):", balance.toString());
+        console.log("[Staking] Formatted TEA balance:", formattedBalance);
+        setTeaBalance(formattedBalance);
       } catch (err) {
         console.error("[Staking] Error fetching TEA balance:", err);
       }
@@ -72,12 +79,13 @@ export const useStaking = () => {
         console.error("[Staking] Error fetching allowance:", err);
       }
 
-      // Fetch staking data separately
+      // Fetch staking data separately - these may fail if contract is not deployed or configured
       try {
         const staked = await stakingContract.balanceOf(walletAddress);
         setStakedBalance(formatEther(staked));
       } catch (err) {
         console.error("[Staking] Error fetching staked balance:", err);
+        setStakedBalance("0");
       }
 
       try {
@@ -85,6 +93,7 @@ export const useStaking = () => {
         setEarnedRewards(formatEther(earned));
       } catch (err) {
         console.error("[Staking] Error fetching earned rewards:", err);
+        setEarnedRewards("0");
       }
 
       try {
@@ -92,12 +101,11 @@ export const useStaking = () => {
         setTotalStaked(formatEther(total));
       } catch (err) {
         console.error("[Staking] Error fetching total supply:", err);
+        setTotalStaked("0");
       }
 
-      // Reward rate may fail if no rewards are configured yet
       try {
         const rate = await stakingContract.rewardRate();
-        // Convert per-second rate to per-year (rate * seconds in a year)
         const ratePerYear = BigInt(rate.toString()) * BigInt(365 * 24 * 60 * 60);
         setRewardRate(formatEther(ratePerYear));
       } catch (err) {
@@ -106,7 +114,7 @@ export const useStaking = () => {
       }
 
     } catch (error) {
-      console.error("Error fetching staking data:", error);
+      console.error("[Staking] General error:", error);
     }
   }, [walletAddress, getProvider]);
 
