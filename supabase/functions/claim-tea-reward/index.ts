@@ -9,7 +9,7 @@ const corsHeaders = {
 const TEA_TOKEN_ADDRESS = "0x83dc1E40D60d0b96109139364f892E46Bea96876";
 const TEA_DECIMALS = 6;
 const REWARD_AMOUNT = 100; // 100 TEA tokens
-const MODULE_3_QUIZ_ID = "module-3-quiz";
+const MODULE_3_QUIZ_ID = "module-3";
 
 // Minimal ERC20 ABI for transfer
 const ERC20_ABI = [
