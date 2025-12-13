@@ -1,1 +1,4 @@
 project_id = "fclgskdscqdxupthknik"
+
+[functions.claim-tea-reward]
+verify_jwt = false
