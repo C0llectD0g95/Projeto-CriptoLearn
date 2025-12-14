@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { useGovernance } from "@/hooks/useGovernance";
 import { useWallet } from "@/hooks/useWallet";
 import { Vote, FileText, Check, Loader2, Wallet, Leaf } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 const Governance = () => {
-  const { walletAddress } = useWallet();
+  const { walletAddress, connectWallet, hasMetaMask, isConnecting } = useWallet();
   const { 
     votingPower, 
     teaBalance, 
@@ -47,7 +48,25 @@ const Governance = () => {
                 <Wallet className="h-16 w-16 text-muted-foreground mb-4" />
                 <h3 className="text-xl font-semibold mb-2">Conecte sua Carteira</h3>
                 <p className="text-muted-foreground text-center max-w-md">
-                  Para participar da governança, conecte sua carteira MetaMask clicando no botão "Conectar Carteira" no menu.
+                  Para participar da governança,{" "}
+                  <button
+                    onClick={() => {
+                      if (!hasMetaMask) {
+                        toast({
+                          title: "MetaMask não encontrada",
+                          description: "Instale a extensão MetaMask para continuar.",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      connectWallet();
+                    }}
+                    disabled={isConnecting}
+                    className="text-primary hover:underline font-medium cursor-pointer disabled:opacity-50"
+                  >
+                    {isConnecting ? "conectando..." : "conecte sua carteira MetaMask"}
+                  </button>
+                  .
                 </p>
               </CardContent>
             </Card>

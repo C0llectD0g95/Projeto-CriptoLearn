@@ -36,7 +36,9 @@ const Staking = () => {
     withdraw, 
     claimRewards,
     exit,
-    refreshData
+    refreshData,
+    cooldownRemaining,
+    canWithdraw
   } = useStaking();
   
   const [stakeAmount, setStakeAmount] = useState("");
@@ -68,6 +70,14 @@ const Staking = () => {
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     if (days > 0) return `${days}d ${hours}h restantes`;
     return `${hours}h restantes`;
+  };
+
+  const formatCooldown = (ms: number) => {
+    if (ms <= 0) return null;
+    const hours = Math.floor(ms / (1000 * 60 * 60));
+    const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+    if (hours > 0) return `${hours}h ${minutes}min`;
+    return `${minutes}min`;
   };
 
   const handleStake = async () => {
@@ -354,7 +364,7 @@ const Staking = () => {
                           </div>
                           <Button 
                             onClick={handleWithdraw}
-                            disabled={isLoading || !withdrawAmount || parseFloat(withdrawAmount) <= 0}
+                            disabled={isLoading || !withdrawAmount || parseFloat(withdrawAmount) <= 0 || !canWithdraw}
                             className="min-w-[140px]"
                           >
                             {isLoading ? (
@@ -367,13 +377,21 @@ const Staking = () => {
                         <p className="text-xs text-muted-foreground mt-2">
                           Em stake: {formatNumber(stakedBalance)} TEA
                         </p>
+                        {!canWithdraw && cooldownRemaining > 0 && (
+                          <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                            <Clock className="h-4 w-4 text-yellow-500" />
+                            <p className="text-xs text-yellow-500">
+                              Cooldown ativo: {formatCooldown(cooldownRemaining)} para poder retirar
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       <div className="pt-4 border-t border-border/50">
                         <Button 
                           variant="outline" 
                           onClick={exit}
-                          disabled={isLoading || parseFloat(stakedBalance) === 0}
+                          disabled={isLoading || parseFloat(stakedBalance) === 0 || !canWithdraw}
                           className="w-full"
                         >
                           {isLoading ? (
