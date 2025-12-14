@@ -21,6 +21,7 @@ interface WalletContextType {
   balance: string | null;
   isConnecting: boolean;
   hasMetaMask: boolean;
+  isMobile: boolean;
   isCorrectNetwork: boolean;
   connectWallet: () => Promise<void>;
   disconnectWallet: () => Promise<void>;
@@ -30,6 +31,18 @@ interface WalletContextType {
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
+// Detect if user is on mobile
+const isMobileDevice = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
+// Get MetaMask deep link for mobile
+const getMetaMaskDeepLink = () => {
+  const currentUrl = window.location.href;
+  // MetaMask mobile app deep link format
+  return `https://metamask.app.link/dapp/${currentUrl.replace(/^https?:\/\//, '')}`;
+};
+
 export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
@@ -37,9 +50,13 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [savedWallets, setSavedWallets] = useState<Array<{ id: string; wallet_address: string; wallet_type: string; is_primary: boolean }>>([]);
   const [hasMetaMask, setHasMetaMask] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [isCorrectNetwork, setIsCorrectNetwork] = useState(false);
 
   useEffect(() => {
+    const mobile = isMobileDevice();
+    setIsMobile(mobile);
+    // On mobile, MetaMask injects ethereum when inside MetaMask browser
     setHasMetaMask(typeof window !== "undefined" && !!window.ethereum?.isMetaMask);
   }, []);
 
@@ -180,6 +197,13 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const connectWallet = async () => {
+    // If on mobile and MetaMask is not available, open MetaMask app via deep link
+    if (isMobile && !window.ethereum) {
+      const deepLink = getMetaMaskDeepLink();
+      window.location.href = deepLink;
+      return;
+    }
+
     if (!window.ethereum) {
       toast({
         title: "MetaMask não encontrado",
@@ -258,6 +282,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       balance,
       isConnecting,
       hasMetaMask,
+      isMobile,
       isCorrectNetwork,
       connectWallet,
       disconnectWallet,
