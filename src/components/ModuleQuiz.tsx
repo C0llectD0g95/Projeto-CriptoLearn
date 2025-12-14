@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Trophy, RotateCcw, Coins, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Trophy, RotateCcw, Coins, Loader2, AlertCircle, Wallet, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -27,6 +27,17 @@ interface ModuleQuizProps {
   isCompleted: boolean;
 }
 
+interface EligibilityStatus {
+  canClaim: boolean;
+  reason: string | null;
+  alreadyClaimed: boolean;
+  walletConnected: boolean;
+  walletAddress: string | null;
+  walletAge: number | null;
+  walletTooNew: boolean;
+  walletAlreadyUsed: boolean;
+}
+
 export default function ModuleQuiz({ quiz, onComplete, isCompleted }: ModuleQuizProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -34,6 +45,8 @@ export default function ModuleQuiz({ quiz, onComplete, isCompleted }: ModuleQuiz
   const [answers, setAnswers] = useState<number[]>([]);
   const [quizFinished, setQuizFinished] = useState(false);
   const [isClaimingReward, setIsClaimingReward] = useState(false);
+  const [eligibility, setEligibility] = useState<EligibilityStatus | null>(null);
+  const [checkingEligibility, setCheckingEligibility] = useState(false);
 
   const question = quiz.questions[currentQuestion];
   const isCorrect = selectedAnswer === question.correctAnswer;
@@ -43,6 +56,145 @@ export default function ModuleQuiz({ quiz, onComplete, isCompleted }: ModuleQuiz
   ).length;
   const score = Math.round((correctAnswers / totalQuestions) * 100);
   const passed = score >= 70;
+
+  // Check eligibility when viewing completed module 3 quiz
+  useEffect(() => {
+    if (isCompleted && quiz.moduleId === "module-3") {
+      checkEligibility();
+    }
+  }, [isCompleted, quiz.moduleId]);
+
+  const checkEligibility = async () => {
+    setCheckingEligibility(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setEligibility({
+          canClaim: false,
+          reason: "Faça login para verificar sua elegibilidade.",
+          alreadyClaimed: false,
+          walletConnected: false,
+          walletAddress: null,
+          walletAge: null,
+          walletTooNew: false,
+          walletAlreadyUsed: false,
+        });
+        return;
+      }
+
+      // Check if user already claimed
+      const { data: existingClaim } = await supabase
+        .from('tea_rewards')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .eq('reward_type', 'module_3_completion')
+        .maybeSingle();
+
+      if (existingClaim) {
+        setEligibility({
+          canClaim: false,
+          reason: "Você já resgatou esta recompensa.",
+          alreadyClaimed: true,
+          walletConnected: true,
+          walletAddress: null,
+          walletAge: null,
+          walletTooNew: false,
+          walletAlreadyUsed: false,
+        });
+        return;
+      }
+
+      // Check wallet
+      const { data: wallets } = await supabase
+        .from('wallets')
+        .select('wallet_address, connected_at, is_primary')
+        .eq('user_id', session.user.id)
+        .order('is_primary', { ascending: false })
+        .order('connected_at', { ascending: true });
+
+      if (!wallets || wallets.length === 0) {
+        setEligibility({
+          canClaim: false,
+          reason: "Conecte sua carteira MetaMask para resgatar.",
+          alreadyClaimed: false,
+          walletConnected: false,
+          walletAddress: null,
+          walletAge: null,
+          walletTooNew: false,
+          walletAlreadyUsed: false,
+        });
+        return;
+      }
+
+      const wallet = wallets[0];
+      const walletCreatedAt = new Date(wallet.connected_at);
+      const now = new Date();
+      const daysSinceCreation = (now.getTime() - walletCreatedAt.getTime()) / (1000 * 60 * 60 * 24);
+
+      if (daysSinceCreation < 7) {
+        const daysRemaining = Math.ceil(7 - daysSinceCreation);
+        setEligibility({
+          canClaim: false,
+          reason: `Sua carteira precisa ter pelo menos 7 dias. Faltam ${daysRemaining} dia(s).`,
+          alreadyClaimed: false,
+          walletConnected: true,
+          walletAddress: wallet.wallet_address,
+          walletAge: Math.floor(daysSinceCreation),
+          walletTooNew: true,
+          walletAlreadyUsed: false,
+        });
+        return;
+      }
+
+      // Check if wallet already claimed
+      const { data: walletClaim } = await supabase
+        .from('tea_rewards')
+        .select('id')
+        .eq('wallet_address', wallet.wallet_address)
+        .eq('reward_type', 'module_3_completion')
+        .maybeSingle();
+
+      if (walletClaim) {
+        setEligibility({
+          canClaim: false,
+          reason: "Este endereço de carteira já foi usado para resgatar esta recompensa.",
+          alreadyClaimed: false,
+          walletConnected: true,
+          walletAddress: wallet.wallet_address,
+          walletAge: Math.floor(daysSinceCreation),
+          walletTooNew: false,
+          walletAlreadyUsed: true,
+        });
+        return;
+      }
+
+      // User is eligible
+      setEligibility({
+        canClaim: true,
+        reason: null,
+        alreadyClaimed: false,
+        walletConnected: true,
+        walletAddress: wallet.wallet_address,
+        walletAge: Math.floor(daysSinceCreation),
+        walletTooNew: false,
+        walletAlreadyUsed: false,
+      });
+    } catch (error) {
+      console.error('Error checking eligibility:', error);
+      setEligibility({
+        canClaim: false,
+        reason: "Erro ao verificar elegibilidade. Tente novamente.",
+        alreadyClaimed: false,
+        walletConnected: false,
+        walletAddress: null,
+        walletAge: null,
+        walletTooNew: false,
+        walletAlreadyUsed: false,
+      });
+    } finally {
+      setCheckingEligibility(false);
+    }
+  };
 
   const handleSelectAnswer = (index: number) => {
     if (showResult) return;
@@ -110,43 +262,16 @@ export default function ModuleQuiz({ quiz, onComplete, isCompleted }: ModuleQuiz
           title: "🎉 Parabéns! Você ganhou 100 TEA!",
           description: `Transação: ${result.txHash.slice(0, 10)}...${result.txHash.slice(-8)}`,
         });
+        // Update eligibility status
+        setEligibility(prev => prev ? { ...prev, canClaim: false, alreadyClaimed: true, reason: "Recompensa resgatada com sucesso!" } : null);
       } else if (result?.error) {
-        if (result.error === 'Reward already claimed') {
-          toast({
-            title: "Recompensa já resgatada",
-            description: "Você já resgatou os 100 TEA por completar este módulo.",
-          });
-        } else if (result.error === 'No wallet connected. Please connect your wallet first.') {
-          toast({
-            title: "❌ Carteira não conectada",
-            description: "Para receber seus 100 TEA, conecte sua carteira MetaMask primeiro.",
-            variant: "destructive",
-          });
-        } else if (result.error.includes('Sua carteira precisa ter pelo menos 7 dias')) {
-          toast({
-            title: "⏳ Carteira muito recente",
-            description: result.error,
-            variant: "destructive",
-          });
-        } else if (result.error === 'Este endereço de carteira já resgatou esta recompensa.') {
-          toast({
-            title: "❌ Carteira já resgatou",
-            description: "Este endereço de carteira já foi usado para resgatar esta recompensa anteriormente.",
-            variant: "destructive",
-          });
-        } else if (result.error.includes('Too many requests')) {
-          toast({
-            title: "⏳ Muitas tentativas",
-            description: "Aguarde um momento antes de tentar novamente.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "❌ Erro ao resgatar TEA",
-            description: result.error,
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "❌ Erro ao resgatar TEA",
+          description: result.error,
+          variant: "destructive",
+        });
+        // Refresh eligibility
+        checkEligibility();
       }
     } catch (error) {
       console.error('Error claiming reward:', error);
@@ -158,6 +283,108 @@ export default function ModuleQuiz({ quiz, onComplete, isCompleted }: ModuleQuiz
     } finally {
       setIsClaimingReward(false);
     }
+  };
+
+  // Render eligibility status
+  const renderEligibilityStatus = () => {
+    if (checkingEligibility) {
+      return (
+        <div className="flex items-center justify-center gap-2 text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Verificando elegibilidade...</span>
+        </div>
+      );
+    }
+
+    if (!eligibility) return null;
+
+    if (eligibility.alreadyClaimed) {
+      return (
+        <div className="bg-crypto-green/10 border border-crypto-green/30 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-crypto-green">
+            <CheckCircle className="h-5 w-5" />
+            <span className="font-medium">Recompensa já resgatada!</span>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            Você já recebeu seus 100 TEA por completar este módulo.
+          </p>
+        </div>
+      );
+    }
+
+    if (!eligibility.walletConnected) {
+      return (
+        <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-destructive">
+            <Wallet className="h-5 w-5" />
+            <span className="font-medium">Carteira não conectada</span>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            {eligibility.reason}
+          </p>
+        </div>
+      );
+    }
+
+    if (eligibility.walletTooNew) {
+      return (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-amber-500">
+            <Clock className="h-5 w-5" />
+            <span className="font-medium">Carteira muito recente</span>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            {eligibility.reason}
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Carteira conectada há {eligibility.walletAge} dia(s).
+          </p>
+        </div>
+      );
+    }
+
+    if (eligibility.walletAlreadyUsed) {
+      return (
+        <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-destructive">
+            <AlertCircle className="h-5 w-5" />
+            <span className="font-medium">Carteira já utilizada</span>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            {eligibility.reason}
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Endereço: {eligibility.walletAddress?.slice(0, 6)}...{eligibility.walletAddress?.slice(-4)}
+          </p>
+        </div>
+      );
+    }
+
+    if (eligibility.canClaim) {
+      return (
+        <div className="bg-crypto-green/10 border border-crypto-green/30 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-crypto-green">
+            <CheckCircle className="h-5 w-5" />
+            <span className="font-medium">Você está elegível!</span>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            Carteira: {eligibility.walletAddress?.slice(0, 6)}...{eligibility.walletAddress?.slice(-4)} ({eligibility.walletAge} dias)
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
+        <div className="flex items-center gap-2 text-destructive">
+          <AlertCircle className="h-5 w-5" />
+          <span className="font-medium">Não elegível</span>
+        </div>
+        <p className="text-sm text-muted-foreground mt-1">
+          {eligibility.reason}
+        </p>
+      </div>
+    );
   };
 
   // Show completed state for module 3 with claim button
@@ -172,36 +399,66 @@ export default function ModuleQuiz({ quiz, onComplete, isCompleted }: ModuleQuiz
           </div>
           <CardTitle className="text-2xl">Quiz Concluído!</CardTitle>
         </CardHeader>
-        <CardContent className="text-center space-y-6">
-          <p className="text-muted-foreground">
+        <CardContent className="space-y-6">
+          <p className="text-muted-foreground text-center">
             Você já completou este quiz com sucesso!
           </p>
           
           <div className="bg-crypto-gold/10 border border-crypto-gold/30 rounded-lg p-4">
-            <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="flex items-center justify-center gap-2 mb-4">
               <Coins className="h-5 w-5 text-crypto-gold" />
               <span className="font-semibold text-crypto-gold">Recompensa: 100 TEA</span>
             </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Conecte sua carteira MetaMask para resgatar sua recompensa.
-            </p>
-            <Button
-              onClick={handleClaimReward}
-              disabled={isClaimingReward}
-              className="bg-crypto-gold hover:bg-crypto-gold/80 text-black"
-            >
-              {isClaimingReward ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Resgatando...
-                </>
-              ) : (
-                <>
-                  <Coins className="h-4 w-4 mr-2" />
-                  Resgatar 100 TEA
-                </>
-              )}
-            </Button>
+            
+            {/* Eligibility Status */}
+            {renderEligibilityStatus()}
+            
+            {/* Claim Button */}
+            {eligibility?.canClaim && (
+              <div className="mt-4 text-center">
+                <Button
+                  onClick={handleClaimReward}
+                  disabled={isClaimingReward}
+                  className="bg-crypto-gold hover:bg-crypto-gold/80 text-black"
+                >
+                  {isClaimingReward ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Resgatando...
+                    </>
+                  ) : (
+                    <>
+                      <Coins className="h-4 w-4 mr-2" />
+                      Resgatar 100 TEA
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+            
+            {/* Refresh button for non-eligible users */}
+            {eligibility && !eligibility.canClaim && !eligibility.alreadyClaimed && (
+              <div className="mt-4 text-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={checkEligibility}
+                  disabled={checkingEligibility}
+                >
+                  {checkingEligibility ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Verificando...
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Verificar novamente
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
