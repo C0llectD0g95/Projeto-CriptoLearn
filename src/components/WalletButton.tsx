@@ -12,7 +12,7 @@ import { Wallet, ExternalLink, Copy, LogOut, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const WalletButton = () => {
-  const { walletAddress, balance, isConnecting, hasMetaMask, connectWallet, disconnectWallet } = useWallet();
+  const { walletAddress, balance, isConnecting, hasMetaMask, isMobile, connectWallet, disconnectWallet } = useWallet();
 
   const copyAddress = () => {
     if (walletAddress) {
@@ -29,6 +29,16 @@ const WalletButton = () => {
       window.open(`https://etherscan.io/address/${walletAddress}`, "_blank");
     }
   };
+
+  // On mobile without MetaMask, show button that opens MetaMask app
+  if (!hasMetaMask && isMobile) {
+    return (
+      <Button onClick={connectWallet} className="gradient-primary">
+        <Wallet className="h-4 w-4 mr-2" />
+        Abrir MetaMask
+      </Button>
+    );
+  }
 
   if (!hasMetaMask) {
     return (
