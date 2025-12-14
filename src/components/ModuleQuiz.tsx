@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Trophy, RotateCcw } from "lucide-react";
+import { CheckCircle, XCircle, Trophy, RotateCcw, Coins, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 export interface QuizQuestion {
   id: string;
@@ -31,6 +33,7 @@ export default function ModuleQuiz({ quiz, onComplete, isCompleted }: ModuleQuiz
   const [showResult, setShowResult] = useState(false);
   const [answers, setAnswers] = useState<number[]>([]);
   const [quizFinished, setQuizFinished] = useState(false);
+  const [isClaimingReward, setIsClaimingReward] = useState(false);
 
   const question = quiz.questions[currentQuestion];
   const isCorrect = selectedAnswer === question.correctAnswer;
@@ -76,6 +79,134 @@ export default function ModuleQuiz({ quiz, onComplete, isCompleted }: ModuleQuiz
     setAnswers([]);
     setQuizFinished(false);
   };
+
+  const handleClaimReward = async () => {
+    setIsClaimingReward(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "❌ Não autenticado",
+          description: "Faça login para resgatar sua recompensa.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await supabase.functions.invoke('claim-tea-reward', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      const result = response.data;
+      
+      if (result?.success) {
+        toast({
+          title: "🎉 Parabéns! Você ganhou 100 TEA!",
+          description: `Transação: ${result.txHash.slice(0, 10)}...${result.txHash.slice(-8)}`,
+        });
+      } else if (result?.error) {
+        if (result.error === 'Reward already claimed') {
+          toast({
+            title: "Recompensa já resgatada",
+            description: "Você já resgatou os 100 TEA por completar este módulo.",
+          });
+        } else if (result.error === 'No wallet connected. Please connect your wallet first.') {
+          toast({
+            title: "❌ Carteira não conectada",
+            description: "Para receber seus 100 TEA, conecte sua carteira MetaMask primeiro.",
+            variant: "destructive",
+          });
+        } else if (result.error.includes('Sua carteira precisa ter pelo menos 7 dias')) {
+          toast({
+            title: "⏳ Carteira muito recente",
+            description: result.error,
+            variant: "destructive",
+          });
+        } else if (result.error === 'Este endereço de carteira já resgatou esta recompensa.') {
+          toast({
+            title: "❌ Carteira já resgatou",
+            description: "Este endereço de carteira já foi usado para resgatar esta recompensa anteriormente.",
+            variant: "destructive",
+          });
+        } else if (result.error.includes('Too many requests')) {
+          toast({
+            title: "⏳ Muitas tentativas",
+            description: "Aguarde um momento antes de tentar novamente.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "❌ Erro ao resgatar TEA",
+            description: result.error,
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error claiming reward:', error);
+      toast({
+        title: "❌ Erro ao resgatar TEA",
+        description: "Ocorreu um erro ao tentar resgatar sua recompensa. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsClaimingReward(false);
+    }
+  };
+
+  // Show completed state for module 3 with claim button
+  if (isCompleted && quiz.moduleId === "module-3") {
+    return (
+      <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-4">
+            <div className="p-4 rounded-full bg-crypto-green/20">
+              <Trophy className="h-12 w-12 text-crypto-green" />
+            </div>
+          </div>
+          <CardTitle className="text-2xl">Quiz Concluído!</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center space-y-6">
+          <p className="text-muted-foreground">
+            Você já completou este quiz com sucesso!
+          </p>
+          
+          <div className="bg-crypto-gold/10 border border-crypto-gold/30 rounded-lg p-4">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Coins className="h-5 w-5 text-crypto-gold" />
+              <span className="font-semibold text-crypto-gold">Recompensa: 100 TEA</span>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Conecte sua carteira MetaMask para resgatar sua recompensa.
+            </p>
+            <Button
+              onClick={handleClaimReward}
+              disabled={isClaimingReward}
+              className="bg-crypto-gold hover:bg-crypto-gold/80 text-black"
+            >
+              {isClaimingReward ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Resgatando...
+                </>
+              ) : (
+                <>
+                  <Coins className="h-4 w-4 mr-2" />
+                  Resgatar 100 TEA
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (quizFinished) {
     return (
