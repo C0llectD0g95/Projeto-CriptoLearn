@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useWallet } from "@/hooks/useWallet";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,9 +11,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Wallet, ExternalLink, Copy, LogOut, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import MetaMaskMobileModal from "./MetaMaskMobileModal";
 
 const WalletButton = () => {
   const { walletAddress, balance, isConnecting, hasMetaMask, isMobile, connectWallet, disconnectWallet } = useWallet();
+  const [showMobileModal, setShowMobileModal] = useState(false);
 
   const copyAddress = () => {
     if (walletAddress) {
@@ -30,13 +33,28 @@ const WalletButton = () => {
     }
   };
 
-  // On mobile without MetaMask, show button that opens MetaMask app
+  const handleMobileConnect = () => {
+    setShowMobileModal(true);
+  };
+
+  const handleMobileContinue = () => {
+    connectWallet();
+  };
+
+  // On mobile without MetaMask, show button that opens modal with instructions
   if (!hasMetaMask && isMobile) {
     return (
-      <Button onClick={connectWallet} className="gradient-primary">
-        <Wallet className="h-4 w-4 mr-2" />
-        Abrir MetaMask
-      </Button>
+      <>
+        <Button onClick={handleMobileConnect} className="gradient-primary">
+          <Wallet className="h-4 w-4 mr-2" />
+          Abrir MetaMask
+        </Button>
+        <MetaMaskMobileModal
+          open={showMobileModal}
+          onOpenChange={setShowMobileModal}
+          onContinue={handleMobileContinue}
+        />
+      </>
     );
   }
 

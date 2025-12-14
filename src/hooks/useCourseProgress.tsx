@@ -185,14 +185,44 @@ export function useCourseProgress() {
               title: "🎉 Parabéns! Você ganhou 100 TEA!",
               description: `Transação: ${rewardResult.txHash.slice(0, 10)}...${rewardResult.txHash.slice(-8)}`,
             });
-          } else if (rewardResult?.error === 'Reward already claimed') {
-            // Reward already claimed, no need to show error
-          } else if (rewardResult?.error === 'No wallet connected. Please connect your wallet first.') {
-            toast({
-              title: "Conecte sua carteira",
-              description: "Para receber seus 100 TEA, conecte sua carteira MetaMask.",
-              variant: "destructive",
-            });
+          } else if (rewardResult?.error) {
+            // Show specific error messages based on the reason
+            if (rewardResult.error === 'Reward already claimed') {
+              toast({
+                title: "Recompensa já resgatada",
+                description: "Você já resgatou os 100 TEA por completar este módulo.",
+              });
+            } else if (rewardResult.error === 'No wallet connected. Please connect your wallet first.') {
+              toast({
+                title: "❌ Carteira não conectada",
+                description: "Para receber seus 100 TEA, conecte sua carteira MetaMask primeiro.",
+                variant: "destructive",
+              });
+            } else if (rewardResult.error.includes('Sua carteira precisa ter pelo menos 7 dias')) {
+              toast({
+                title: "⏳ Carteira muito recente",
+                description: rewardResult.error,
+                variant: "destructive",
+              });
+            } else if (rewardResult.error === 'Este endereço de carteira já resgatou esta recompensa.') {
+              toast({
+                title: "❌ Carteira já resgatou",
+                description: "Este endereço de carteira já foi usado para resgatar esta recompensa anteriormente.",
+                variant: "destructive",
+              });
+            } else if (rewardResult.error.includes('Too many requests')) {
+              toast({
+                title: "⏳ Muitas tentativas",
+                description: "Aguarde um momento antes de tentar novamente.",
+                variant: "destructive",
+              });
+            } else {
+              toast({
+                title: "❌ Erro ao resgatar TEA",
+                description: rewardResult.error,
+                variant: "destructive",
+              });
+            }
           }
         }
       } catch (error) {
