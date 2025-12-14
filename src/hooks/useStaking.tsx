@@ -9,6 +9,9 @@ import TEAStakingABI from "@/contracts/TEAStaking.json";
 // TEA Token uses 6 decimals
 const TEA_DECIMALS = 6;
 
+// 24 hours in milliseconds
+const COOLDOWN_DURATION = 24 * 60 * 60 * 1000;
+
 export const useStaking = () => {
   const { walletAddress, hasMetaMask } = useWallet();
   const [stakedBalance, setStakedBalance] = useState<string>("0");
@@ -21,6 +24,28 @@ export const useStaking = () => {
   const [rewardsDuration, setRewardsDuration] = useState<number>(0);
   const [apy, setApy] = useState<string>("0");
   const [isLoading, setIsLoading] = useState(false);
+  const [lastStakeTime, setLastStakeTime] = useState<number | null>(null);
+
+  // Load last stake time from localStorage
+  useEffect(() => {
+    if (walletAddress) {
+      const stored = localStorage.getItem(`staking_cooldown_${walletAddress}`);
+      if (stored) {
+        setLastStakeTime(parseInt(stored, 10));
+      }
+    }
+  }, [walletAddress]);
+
+  const getCooldownRemaining = useCallback(() => {
+    if (!lastStakeTime) return 0;
+    const elapsed = Date.now() - lastStakeTime;
+    const remaining = COOLDOWN_DURATION - elapsed;
+    return remaining > 0 ? remaining : 0;
+  }, [lastStakeTime]);
+
+  const canWithdraw = useCallback(() => {
+    return getCooldownRemaining() === 0;
+  }, [getCooldownRemaining]);
 
   const getProvider = useCallback(() => {
     if (!window.ethereum) return null;
@@ -235,8 +260,13 @@ export const useStaking = () => {
       
       toast({
         title: "Stake concluído!",
-        description: `${amount} TEA em stake com sucesso.`,
+        description: `${amount} TEA em stake com sucesso. Cooldown de 24h para retirada iniciado.`,
       });
+
+      // Set cooldown timestamp
+      const now = Date.now();
+      setLastStakeTime(now);
+      localStorage.setItem(`staking_cooldown_${walletAddress}`, now.toString());
 
       await fetchStakingData();
       return true;
@@ -258,6 +288,18 @@ export const useStaking = () => {
       toast({
         title: "Carteira não conectada",
         description: "Conecte sua carteira MetaMask para retirar.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Check cooldown
+    const remaining = getCooldownRemaining();
+    if (remaining > 0) {
+      const hours = Math.ceil(remaining / (1000 * 60 * 60));
+      toast({
+        title: "Cooldown ativo",
+        description: `Aguarde ${hours}h para poder retirar seus tokens.`,
         variant: "destructive",
       });
       return false;
@@ -352,6 +394,18 @@ export const useStaking = () => {
       return false;
     }
 
+    // Check cooldown
+    const remaining = getCooldownRemaining();
+    if (remaining > 0) {
+      const hours = Math.ceil(remaining / (1000 * 60 * 60));
+      toast({
+        title: "Cooldown ativo",
+        description: `Aguarde ${hours}h para poder retirar seus tokens.`,
+        variant: "destructive",
+      });
+      return false;
+    }
+
     setIsLoading(true);
     try {
       const stakingContract = await getStakingContract();
@@ -403,5 +457,7 @@ export const useStaking = () => {
     claimRewards,
     exit,
     refreshData: fetchStakingData,
+    cooldownRemaining: getCooldownRemaining(),
+    canWithdraw: canWithdraw(),
   };
 };
